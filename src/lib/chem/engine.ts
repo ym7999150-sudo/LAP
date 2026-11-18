@@ -11,7 +11,10 @@
  */
 import { getComponentDef } from "@/lib/registry";
 import type { ChemOp, SceneDocument } from "@/lib/scene/schema";
-import { NO_REACTIONS, REACTIONS, type ReactionDef } from "./reactions";
+import { GENERATED, heatOutcome, pairOutcome, waterOutcome } from "./generic";
+import { NO_REACTIONS, REACTIONS, registerGeneratedStore, type ReactionDef } from "./reactions";
+
+registerGeneratedStore(GENERATED);
 import { getSubstance, substanceMolarMass } from "./substances";
 
 const EPS = 1e-9;
@@ -176,45 +179,86 @@ function conditionsMet(c: ContainerState, r: ReactionDef) {
   return true;
 }
 
+/** Apply one reaction to completion with the limiting reagent. Returns false if nothing reacted. */
+function applyReaction(c: ContainerState, r: ReactionDef, opIndex: number, events: ChemEvent[], observed: Set<string>): boolean {
+  if (!r.reactants.every((t) => reactantAvailable(c, r, t.id))) return false;
+  if (!conditionsMet(c, r)) return false;
+  // Limiting reagent (solvent water and atmospheric O2 are in excess).
+  let extent = Infinity;
+  for (const t of r.reactants) {
+    if (t.id === "water" && r.conditions.waterIsSolvent) continue;
+    if (t.id === "o2" && r.conditions.oxygenFromAir) continue;
+    extent = Math.min(extent, (c.mol[t.id] ?? 0) / t.coeff);
+  }
+  if (!Number.isFinite(extent) || extent <= EPS) return false;
+  for (const t of r.reactants) {
+    if (t.id === "water" || (t.id === "o2" && r.conditions.oxygenFromAir)) continue;
+    c.mol[t.id] = Math.max(0, (c.mol[t.id] ?? 0) - t.coeff * extent);
+    if (c.mol[t.id]! <= EPS) delete c.mol[t.id];
+  }
+  for (const p of r.products) {
+    if (p.id === "water") continue; // solvent volume change neglected
+    const s = getSubstance(p.id);
+    if (s?.state === "g") continue; // gases escape from the open container
+    c.mol[p.id] = (c.mol[p.id] ?? 0) + p.coeff * extent;
+  }
+  let tempChange: number | undefined;
+  if (r.deltaH !== undefined && c.volumeMl > EPS) {
+    tempChange = (-r.deltaH * 1000 * extent) / (c.volumeMl * WATER_HEAT_CAPACITY);
+    c.tempC = Math.min(100, c.tempC + tempChange);
+  }
+  events.push({ opIndex, containerId: c.id, kind: "reaction", reactionId: r.id, extentMol: extent, tempChange });
+  observed.add(r.id);
+  return true;
+}
+
+const hasCurated = (a: string, b: string) => REACTIONS.some((r) => r.reactants.some((t) => t.id === a) && r.reactants.some((t) => t.id === b));
+const curatedWater = (a: string) => REACTIONS.some((r) => r.conditions.waterIsSolvent && r.reactants.some((t) => t.id === a));
+const curatedHeat = (a: string) => REACTIONS.some((r) => r.reactants.length === 1 && r.reactants[0]!.id === a && r.conditions.minTempC !== undefined);
+
 function runReactions(c: ContainerState, opIndex: number, events: ChemEvent[], observed: Set<string>) {
-  for (let pass = 0; pass < 12; pass++) {
+  for (let pass = 0; pass < 16; pass++) {
     let fired = false;
-    for (const r of REACTIONS) {
-      if (!r.reactants.every((t) => reactantAvailable(c, r, t.id))) continue;
-      if (!conditionsMet(c, r)) continue;
-      // Limiting reagent (solvent water and atmospheric O2 are in excess).
-      let extent = Infinity;
-      for (const t of r.reactants) {
-        if (t.id === "water" && r.conditions.waterIsSolvent) continue;
-        if (t.id === "o2" && r.conditions.oxygenFromAir) continue;
-        extent = Math.min(extent, (c.mol[t.id] ?? 0) / t.coeff);
+    // 1) Curated, hand-validated reactions (with their specific observations).
+    for (const r of REACTIONS) if (applyReaction(c, r, opIndex, events, observed)) fired = true;
+    // 2) Rule-generated reactions for every remaining pair, and with the solvent water.
+    const ids = Object.keys(c.mol).filter((id) => (c.mol[id] ?? 0) > EPS);
+    for (let i = 0; i < ids.length && !fired; i++) {
+      const a = ids[i]!;
+      if (c.volumeMl > EPS && !curatedWater(a)) {
+        const w = waterOutcome(a);
+        if (w?.kind === "reaction" && applyReaction(c, w.def, opIndex, events, observed)) fired = true;
       }
-      if (!Number.isFinite(extent) || extent <= EPS) continue;
-      for (const t of r.reactants) {
-        if (t.id === "water" || (t.id === "o2" && r.conditions.oxygenFromAir)) continue;
-        c.mol[t.id] = Math.max(0, (c.mol[t.id] ?? 0) - t.coeff * extent);
-        if (c.mol[t.id]! <= EPS) delete c.mol[t.id];
+      for (let j = i + 1; j < ids.length && !fired; j++) {
+        const b = ids[j]!;
+        if (hasCurated(a, b)) continue;
+        // Only substances that are free to meet react: at least one must be dissolved, or it is heated solid–solid.
+        const sa = getSubstance(a);
+        const sb = getSubstance(b);
+        if (sa?.state === "s" && sb?.state === "s" && c.volumeMl <= EPS) continue;
+        const o = pairOutcome(a, b);
+        if (o.kind === "reaction" && applyReaction(c, o.def, opIndex, events, observed)) fired = true;
       }
-      for (const p of r.products) {
-        if (p.id === "water") continue; // solvent volume change neglected
-        const s = getSubstance(p.id);
-        if (s?.state === "g") continue; // gases escape from the open container
-        c.mol[p.id] = (c.mol[p.id] ?? 0) + p.coeff * extent;
-      }
-      let tempChange: number | undefined;
-      if (r.deltaH !== undefined && c.volumeMl > EPS) {
-        tempChange = (-r.deltaH * 1000 * extent) / (c.volumeMl * WATER_HEAT_CAPACITY);
-        c.tempC = Math.min(100, c.tempC + tempChange);
-      }
-      events.push({ opIndex, containerId: c.id, kind: "reaction", reactionId: r.id, extentMol: extent, tempChange });
-      observed.add(r.id);
-      fired = true;
     }
+    // 3) Thermal decomposition of solids that are hot enough.
+    if (!fired)
+      for (const a of Object.keys(c.mol)) {
+        if (curatedHeat(a)) continue;
+        const h = heatOutcome(a);
+        if (h && c.tempC >= h.minTempC && h.outcome.kind === "reaction" && applyReaction(c, h.outcome.def, opIndex, events, observed)) {
+          fired = true;
+          break;
+        }
+      }
     if (!fired) break;
   }
 }
 
 const REACTIVE_CLASSES = new Set(["acid", "base", "metal", "salt", "oxide", "nonmetal", "catalyst", "organic"]);
+
+function reactantAvailableLoose(c: ContainerState, id: string) {
+  return (c.mol[id] ?? 0) > EPS;
+}
 
 function reportPairs(c: ContainerState, added: string[], opIndex: number, events: ChemEvent[]) {
   const present = Object.keys(c.mol).filter((id) => (c.mol[id] ?? 0) > EPS && REACTIVE_CLASSES.has(getSubstance(id)?.cls ?? ""));
@@ -237,18 +281,15 @@ function reportPairs(c: ContainerState, added: string[], opIndex: number, events
         continue;
       }
       const none = NO_REACTIONS.find((n) => n.reactants.includes(a) && n.reactants.includes(b));
-      if (none) events.push({ opIndex, containerId: c.id, kind: "no-reaction", substances: [a, b], message: none.explanation });
-      else
-        events.push({
-          opIndex,
-          containerId: c.id,
-          kind: "unsupported",
-          substances: [a, b],
-          message: {
-            en: "LabVerse has no validated reaction data for this combination, so no change is simulated.",
-            ar: "لا توجد بيانات تفاعل موثقة لهذا المزيج في LabVerse، لذلك لا يُحاكى أي تغيير.",
-          },
-        });
+      if (none) {
+        events.push({ opIndex, containerId: c.id, kind: "no-reaction", substances: [a, b], message: none.explanation });
+        continue;
+      }
+      // Rule-based outcome: always defined (a reaction already applied, or a stated "no reaction").
+      const o = pairOutcome(a, b);
+      if (o.kind === "none") events.push({ opIndex, containerId: c.id, kind: "no-reaction", substances: [a, b], message: o.explanation });
+      else if (!o.def.reactants.every((t) => t.id === "water" || reactantAvailableLoose(c, t.id)) && !events.some((e) => e.reactionId === o.def.id))
+        events.push({ opIndex, containerId: c.id, kind: "needs-condition", reactionId: o.def.id, substances: [a, b], message: { en: "These react, but one reactant was already used up.", ar: "هاتان المادتان تتفاعلان لكن إحدى المادتين استُهلكت بالفعل." } });
     }
   }
 }

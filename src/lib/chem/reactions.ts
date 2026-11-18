@@ -381,6 +381,11 @@ export const NO_REACTIONS: NoReactionDef[] = [
   { reactants: ["nacl", "na2so4"], explanation: { en: "Common ion, no reaction.", ar: "أيون مشترك، لا يحدث تفاعل." } },
 ];
 
-export function findReactionById(id: string) {
-  return REACTIONS.find((r) => r.id === id);
+let generated: Map<string, ReactionDef> | null = null;
+/** Curated reactions first, then rule-generated ones (registered during a replay). */
+export function findReactionById(id: string): ReactionDef | undefined {
+  return REACTIONS.find((r) => r.id === id) ?? generated?.get(id);
+}
+export function registerGeneratedStore(m: Map<string, ReactionDef>) {
+  generated = m;
 }

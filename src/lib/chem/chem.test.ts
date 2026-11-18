@@ -142,7 +142,7 @@ describe("engine behaviour", () => {
     expect(res.containers.A!.mol.zn).toBeUndefined();
   });
 
-  it("documented non-reactions and unsupported combinations are reported, not invented", () => {
+  it("documented and rule-based non-reactions are reported, never invented or left undefined", () => {
     const res = replayChemistry(
       lab([
         { kind: "add", containerId: "A", substanceId: "hcl", volumeMl: 20 },
@@ -152,7 +152,9 @@ describe("engine behaviour", () => {
       ]),
     );
     expect(res.events.some((e) => e.kind === "no-reaction" && e.containerId === "A")).toBe(true);
-    expect(res.events.some((e) => e.kind === "unsupported" && e.containerId === "B")).toBe(true);
+    // Every combination is defined: sugar + KI is a stated "no reaction", never "unsupported".
+    expect(res.events.some((e) => e.kind === "no-reaction" && e.containerId === "B")).toBe(true);
+    expect(res.events.some((e) => e.kind === "unsupported")).toBe(false);
     expect(res.reactionsObserved).toHaveLength(0);
   });
 

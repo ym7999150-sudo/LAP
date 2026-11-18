@@ -149,6 +149,13 @@ function Model({ obj, quality }: { obj: SObj; quality: Quality }) {
     }
     case "fan":
       return <FanOverlay assetId={def.assetId} activity={sim?.activity ?? 0} />;
+    case "oscilloscope":
+      return (
+        <>
+          <AssetModel assetId={def.assetId} fallback={procedural} />
+          <StateBadge text={sim?.readingUnit ? `${(sim.reading ?? 0).toFixed(2)} V${sim.state === "on" ? " ∿" : " —"}` : "--"} tone={sim?.reading ? "on" : "off"} y={0.42} />
+        </>
+      );
     case "switch":
     case "push-button": {
       const closed = obj.props.closed === true;

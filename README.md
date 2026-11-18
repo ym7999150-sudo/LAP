@@ -21,11 +21,12 @@ Legend: ✅ implemented & covered by automated tests · 🟢 implemented, checke
 | Diodes & LEDs (piecewise-linear, iterative) | ✅ 🔶 |
 | Capacitor (open) / inductor (winding R) — DC steady state only | ✅ 🔶 |
 | Thermistor (Beta model), LDR (power-law approximation), electromagnet field indicator, compass | ✅ 🔶 |
-| AC, transient RC/RL/RLC, transistors, MOSFETs, op-amps, relays, oscilloscope | ⬜ (in catalog, labelled "not simulated yet") |
+| Zener, NPN transistor & MOSFET (switch models), relay, op-amp comparator, wattmeter, oscilloscope, AC (RMS) | ✅ 🔶 |
+| Transient RC/RL/RLC and full AC phasor analysis | ⬜ |
 | Chemistry engine: deterministic replay of add / pour / heat / empty operations | ✅ |
 | 26 atom-balanced reactions (neutralisation, precipitation, displacement, acid–metal, acid–carbonate, decomposition, catalysis, combination, combustion) | ✅ |
 | Limiting reagent, ΔT for neutralisation, pH (strong acid/base; tabulated hints otherwise), indicators | ✅ 🔶 |
-| Unknown combinations reported as unsupported (never invented) + documented non-reactions | ✅ |
+| Rule-based outcome for EVERY combination (solubility rules, activity series, acid–base, carbonates, water, heating) with automatic balancing — tested over all reagent pairs | ✅ |
 | Periodic table: 118 elements, IUPAC atomic weights, configurations with documented exceptions | ✅ |
 
 ### 3D editor

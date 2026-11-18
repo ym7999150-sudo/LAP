@@ -310,6 +310,27 @@ function Ic() {
   );
 }
 
+/** Relay: coil on a bobbin plus a visible contact that closes when energised. */
+function Relay({ sim }: ModelProps) {
+  const closed = sim?.state === "closed";
+  return (
+    <group>
+      <mesh position={[0, 0.04, 0]} castShadow>
+        <boxGeometry args={[0.5, 0.08, 0.34]} />
+        <meshStandardMaterial color="#1e293b" roughness={0.6} />
+      </mesh>
+      <mesh position={[-0.08, 0.16, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.07, 0.07, 0.2, 20]} />
+        <meshStandardMaterial color="#b45309" metalness={0.7} roughness={0.35} emissive="#f59e0b" emissiveIntensity={closed ? 0.25 : 0} />
+      </mesh>
+      <mesh position={[0.13, 0.17, 0]} rotation={[0, 0, closed ? -0.05 : 0.35]}>
+        <boxGeometry args={[0.16, 0.015, 0.06]} />
+        <meshStandardMaterial color="#e5e7eb" metalness={0.9} roughness={0.2} />
+      </mesh>
+    </group>
+  );
+}
+
 function Bulb({ sim, quality }: ModelProps) {
   const a = sim?.activity ?? 0;
   const mat = useRef<MeshStandardMaterial>(null);
@@ -547,6 +568,7 @@ export const PHYSICS_MODELS: Record<string, (p: ModelProps & { deflection?: numb
   diode: Diode,
   led: Diode,
   ic: Ic,
+  relay: Relay,
   bulb: Bulb,
   motor: Motor,
   buzzer: Buzzer,

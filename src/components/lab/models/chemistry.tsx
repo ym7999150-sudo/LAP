@@ -19,9 +19,9 @@ export interface ContainerProfile {
 export const PROFILES: Record<string, ContainerProfile> = {
   beaker: { height: 0.42, inner: [[0, 0.012], [0.17, 0.012], [0.17, 0.42]], glass: true },
   "beaker-small": { height: 0.3, inner: [[0, 0.01], [0.12, 0.01], [0.12, 0.3]], glass: true },
-  "test-tube": { height: 0.5, inner: [[0, 0.035], [0.022, 0.04], [0.033, 0.06], [0.04, 0.09], [0.04, 0.5]], glass: true },
+  "test-tube": { height: 0.5, inner: [[0, 0.03], [0.018, 0.034], [0.026, 0.05], [0.03, 0.075], [0.03, 0.5]], glass: true },
   flask: { height: 0.5, inner: [[0, 0.012], [0.2, 0.012], [0.21, 0.04], [0.06, 0.34], [0.05, 0.36], [0.05, 0.5]], glass: true },
-  cylinder: { height: 0.62, inner: [[0, 0.04], [0.06, 0.04], [0.06, 0.62]], glass: true },
+  cylinder: { height: 0.62, inner: [[0, 0.03], [0.068, 0.03], [0.068, 0.62]], glass: true },
   crucible: { height: 0.14, inner: [[0, 0.02], [0.05, 0.022], [0.09, 0.08], [0.11, 0.14]], glass: false },
 };
 

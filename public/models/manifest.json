@@ -3,24 +3,24 @@
  "assets": [
   {
    "id": "ph-beaker-large",
-   "name": "Beaker (large)",
+   "name": "Tall graduated vessel",
    "path": "/models/polyhaven/chemistry_set/chemistry_set.gltf",
    "nodes": [
     "chemistry_set_beaker_large"
    ],
    "fit": [
-    0.38,
-    0.43,
-    0.38
+    0.16,
+    0.62,
+    0.16
    ],
    "source": "https://polyhaven.com/a/chemistry_set",
    "author": "Jiří Ptáček",
    "license": "CC0-1.0",
-   "intendedUse": "beaker-250 glass (liquid is simulated inside)"
+   "intendedUse": "measuring-cylinder glass (liquid is simulated inside)"
   },
   {
    "id": "ph-beaker-small",
-   "name": "Beaker (small)",
+   "name": "Beaker",
    "path": "/models/polyhaven/chemistry_set/chemistry_set.gltf",
    "nodes": [
     "chemistry_set_beaker_small"
@@ -33,7 +33,7 @@
    "source": "https://polyhaven.com/a/chemistry_set",
    "author": "Jiří Ptáček",
    "license": "CC0-1.0",
-   "intendedUse": "beaker-100 glass"
+   "intendedUse": "beaker-250 and beaker-100 glass (scaled, native proportions)"
   },
   {
    "id": "ph-test-tube",
@@ -43,9 +43,9 @@
     "chemistry_set_test_tube_a"
    ],
    "fit": [
-    0.095,
+    0.075,
     0.5,
-    0.095
+    0.075
    ],
    "source": "https://polyhaven.com/a/chemistry_set",
    "author": "Jiří Ptáček",
@@ -514,6 +514,23 @@
    "author": "J-Toastie",
    "license": "CC-BY-3.0",
    "intendedUse": "fan (blades spin with power)"
+  },
+  {
+   "id": "ph-beaker-250",
+   "name": "Beaker (250 mL scale)",
+   "path": "/models/polyhaven/chemistry_set/chemistry_set.gltf",
+   "nodes": [
+    "chemistry_set_beaker_small"
+   ],
+   "fit": [
+    0.38,
+    0.43,
+    0.38
+   ],
+   "source": "https://polyhaven.com/a/chemistry_set",
+   "author": "Jiří Ptáček",
+   "license": "CC0-1.0",
+   "intendedUse": "beaker-250 glass"
   }
  ]
 }

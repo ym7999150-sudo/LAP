@@ -178,15 +178,28 @@ describe("disconnected and invalid configurations", () => {
     expect(res.closedCircuit).toBe(false);
   });
 
-  it("flags unsupported components and treats them as open", () => {
-    const c = new CircuitBuilder();
-    const b = c.add("battery");
-    const q = c.add("npn-transistor");
-    c.wire(`${b}.pos`, `${q}.p1`);
-    c.wire(`${q}.p3`, `${b}.neg`);
-    const res = simulateCircuit(c.doc);
-    expect(res.issues.some((i) => i.code === "unsupported-component")).toBe(true);
-    expect(res.closedCircuit).toBe(false);
+  it("an NPN transistor switches a lamp only when base current flows", () => {
+    const build = (baseOn: boolean) => {
+      const c = new CircuitBuilder();
+      const b = c.add("battery", { voltage: 9, internalResistance: 0.1 });
+      const q = c.add("npn-transistor");
+      const l = c.add("bulb", { ratedVoltage: 9, ratedPower: 3 });
+      const rb = c.add("resistor", { resistance: 4700 });
+      const s = c.add("switch", { closed: baseOn });
+      c.wire(`${b}.pos`, `${l}.a`);
+      c.wire(`${l}.b`, `${q}.c`);
+      c.wire(`${q}.e`, `${b}.neg`);
+      c.wire(`${b}.pos`, `${s}.a`);
+      c.wire(`${s}.b`, `${rb}.a`);
+      c.wire(`${rb}.b`, `${q}.b`);
+      return { r: simulateCircuit(c.doc), q, l };
+    };
+    const on = build(true);
+    expect(on.r.components[on.q]!.state).toBe("on");
+    expect(on.r.components[on.l]!.state).toBe("on");
+    const off = build(false);
+    expect(off.r.components[off.q]!.state).toBe("off");
+    expect(off.r.components[off.l]!.state).toBe("off");
   });
 
   it("handles an empty scene and a circuit with no source", () => {
@@ -382,5 +395,99 @@ describe("generator and fan", () => {
     c.wire(`${b}.pos`, `${r}.a`);
     c.wire(`${r}.b`, `${b}.neg`);
     close(simulateCircuit(c.doc).components[r]!.current, 0.1, 2e-3);
+  });
+});
+
+describe("semiconductors, relay, AC and instruments", () => {
+  it("zener diode holds the reverse voltage near Vz", () => {
+    const c = new CircuitBuilder();
+    const b = c.add("battery", { voltage: 12, internalResistance: 0.01 });
+    const r = c.add("resistor", { resistance: 220 });
+    const z = c.add("zener", { vz: 5.1 });
+    c.wire(`${b}.pos`, `${r}.a`);
+    c.wire(`${r}.b`, `${z}.cathode`);
+    c.wire(`${z}.anode`, `${b}.neg`);
+    const res = simulateCircuit(c.doc);
+    expect(Math.abs(res.components[z]!.voltage + 5.1)).toBeLessThan(0.1);
+    expect(res.components[z]!.state).toBe("on");
+  });
+
+  it("MOSFET conducts only above its threshold gate voltage", () => {
+    const run = (vg: number) => {
+      const c = new CircuitBuilder();
+      const b = c.add("battery", { voltage: 9, internalResistance: 0.01 });
+      const g = c.add("battery", { voltage: vg, internalResistance: 0.01 });
+      const m = c.add("mosfet-n", { vth: 2 });
+      const l = c.add("resistor", { resistance: 100 });
+      c.wire(`${b}.pos`, `${l}.a`);
+      c.wire(`${l}.b`, `${m}.d`);
+      c.wire(`${m}.s`, `${b}.neg`);
+      c.wire(`${g}.pos`, `${m}.g`);
+      c.wire(`${g}.neg`, `${m}.s`);
+      return simulateCircuit(c.doc).components[l]!.current;
+    };
+    expect(run(5)).toBeGreaterThan(0.08);
+    expect(Math.abs(run(1))).toBeLessThan(1e-4);
+  });
+
+  it("relay contact closes when the coil current exceeds 30 mA", () => {
+    const run = (vcoil: number) => {
+      const c = new CircuitBuilder();
+      const coilBat = c.add("battery", { voltage: vcoil, internalResistance: 0.01 });
+      const rl = c.add("relay", { coilResistance: 100 });
+      const b = c.add("battery", { voltage: 6, internalResistance: 0.01 });
+      const lamp = c.add("bulb", { ratedVoltage: 6, ratedPower: 3 });
+      c.wire(`${coilBat}.pos`, `${rl}.c1`);
+      c.wire(`${rl}.c2`, `${coilBat}.neg`);
+      c.wire(`${b}.pos`, `${rl}.s1`);
+      c.wire(`${rl}.s2`, `${lamp}.a`);
+      c.wire(`${lamp}.b`, `${b}.neg`);
+      const r = simulateCircuit(c.doc);
+      return { relay: r.components[rl]!.state, lamp: r.components[lamp]!.state };
+    };
+    expect(run(6)).toEqual({ relay: "closed", lamp: "on" }); // 60 mA
+    expect(run(1.5)).toEqual({ relay: "open", lamp: "off" }); // 15 mA
+  });
+
+  it("comparator output switches with its inputs", () => {
+    const run = (vin: number) => {
+      const c = new CircuitBuilder();
+      const ref = c.add("battery", { voltage: 2.5, internalResistance: 0.01 });
+      const sig = c.add("battery", { voltage: vin, internalResistance: 0.01 });
+      const op = c.add("op-amp");
+      const led = c.add("led");
+      const r = c.add("resistor", { resistance: 220 });
+      c.add("ground", {}, "gnd");
+      c.wire(`${ref}.neg`, "gnd.g");
+      c.wire(`${sig}.neg`, "gnd.g");
+      c.wire(`${ref}.pos`, `${op}.inn`);
+      c.wire(`${sig}.pos`, `${op}.inp`);
+      c.wire(`${op}.out`, `${r}.a`);
+      c.wire(`${r}.b`, `${led}.anode`);
+      c.wire(`${led}.cathode`, `${op}.inn`);
+      const res = simulateCircuit(c.doc);
+      return { out: res.components[op]!.state, led: res.components[led]!.state };
+    };
+    expect(run(4)).toEqual({ out: "on", led: "on" });
+    expect(run(1)).toEqual({ out: "off", led: "off" });
+  });
+
+  it("wattmeter reads P = V × I and AC sources use RMS values", () => {
+    const c = new CircuitBuilder();
+    const ac = c.add("ac-source", { amplitude: 10 * Math.SQRT2, frequency: 50 });
+    const w = c.add("wattmeter");
+    const r = c.add("resistor", { resistance: 100 });
+    const scope = c.add("oscilloscope");
+    c.wire(`${ac}.a`, `${w}.ip`);
+    c.wire(`${w}.in`, `${r}.a`);
+    c.wire(`${r}.b`, `${ac}.b`);
+    c.wire(`${w}.vp`, `${r}.a`);
+    c.wire(`${w}.vn`, `${r}.b`);
+    c.wire(`${scope}.pos`, `${r}.a`);
+    c.wire(`${scope}.neg`, `${r}.b`);
+    const res = simulateCircuit(c.doc);
+    close(res.components[w]!.reading!, 1, 5e-3); // 10 V rms across 100 Ω → 1 W
+    close(res.components[scope]!.reading!, 10, 5e-3);
+    expect(res.closedCircuit).toBe(true);
   });
 });

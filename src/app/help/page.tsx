@@ -13,15 +13,15 @@ const SECTIONS = [
   {
     title: { en: "What is simulated", ar: "ما الذي يُحاكى" },
     body: {
-      en: "DC steady state: resistors, batteries with internal resistance, switches, fuses, bulbs, motors (as resistance), heaters, LEDs and diodes (piecewise-linear), electromagnets, ammeters, voltmeters, ohmmeters and multimeters. Capacitors are open circuits and inductors are their winding resistance (DC steady state). AC, transients, transistors and op-amps are not simulated yet and are labelled as such.",
-      ar: "حالة الاستقرار للتيار المستمر: المقاومات، البطاريات بمقاومتها الداخلية، المفاتيح، المنصهرات، المصابيح، المحركات (كمقاومة)، السخانات، الثنائيات والـLED (نموذج خطي متقطع)، المغناطيس الكهربي، الأميتر والفولتميتر والأوميتر والملتيميتر. المكثف دائرة مفتوحة والملف مقاومة سلكه. التيار المتردد والحالات العابرة والترانزستورات ومكبرات العمليات غير مُحاكاة بعد ومعلَّمة بذلك.",
+      en: "DC steady state: resistors, batteries with internal resistance, switches, fuses, bulbs, motors (as resistance), heaters, LEDs and diodes (piecewise-linear), electromagnets, ammeters, voltmeters, ohmmeters and multimeters. Capacitors are open circuits and inductors are their winding resistance (DC steady state). Transistors and MOSFETs use a switch model, the op-amp is a comparator, relays and Zener diodes are modelled, and AC sources use RMS values (exact for resistive loads).",
+      ar: "حالة الاستقرار للتيار المستمر: المقاومات، البطاريات بمقاومتها الداخلية، المفاتيح، المنصهرات، المصابيح، المحركات (كمقاومة)، السخانات، الثنائيات والـLED (نموذج خطي متقطع)، المغناطيس الكهربي، الأميتر والفولتميتر والأوميتر والملتيميتر. المكثف دائرة مفتوحة والملف مقاومة سلكه. الترانزستور والموسفت بنموذج المفتاح، ومكبر العمليات كمقارن، والريلاي ودايود زينر مُنمذجان، ومصدر التيار المتردد بالقيم الفعّالة (دقيق للأحمال المقاومة).",
     },
   },
   {
     title: { en: "Chemistry lab", ar: "معمل الكيمياء" },
     body: {
-      en: "Select a container, then tap a reagent on the shelf to pour or scoop it in. Use 'Pour into…' to transfer between containers, and drop a container on a lit burner to heat it. Drag from the steel-wool pad onto a crucible to pull off a tuft. Only validated, atom-balanced reactions run; other combinations are reported as unsupported instead of inventing a result.",
-      ar: "اختر وعاءً ثم انقر على كاشف من الرف لصبه أو إضافته. استخدم «اصبب في…» للنقل بين الأوعية، وضع الوعاء فوق موقد مشتعل لتسخينه. اسحب من لفة صوف الصلب إلى البوتقة لتنتزع قطعة. تعمل فقط التفاعلات الموثقة والموزونة؛ وأي مزيج آخر يُعلن أنه غير مدعوم بدلاً من اختلاق نتيجة.",
+      en: "Select a container, then tap a reagent on the shelf to pour or scoop it in. Use 'Pour into…' to transfer between containers, and drop a container on a lit burner to heat it. Drag from the steel-wool pad onto a crucible to pull off a tuft. Hand-validated reactions run first; every other combination is decided by standard rules (solubility rules, activity series, acid–base, carbonate, water and heating rules) and the equation is balanced automatically — no combination is left undefined.",
+      ar: "اختر وعاءً ثم انقر على كاشف من الرف لصبه أو إضافته. استخدم «اصبب في…» للنقل بين الأوعية، وضع الوعاء فوق موقد مشتعل لتسخينه. اسحب من لفة صوف الصلب إلى البوتقة لتنتزع قطعة. تعمل التفاعلات الموثقة يدوياً أولاً، وأي مزيج آخر تحدده القواعد العلمية المعتمدة (قواعد الذوبانية، متسلسلة النشاط، الأحماض والقواعد، الكربونات، الماء والتسخين) وتُوزن المعادلة آلياً — فلا يبقى أي مزيج غير معرّف.",
     },
   },
   {

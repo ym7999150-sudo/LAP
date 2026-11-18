@@ -71,7 +71,7 @@ export interface ComponentResult {
   activity?: number;
   /** Meter reading in SI units; null means overload / not applicable. */
   reading?: number | null;
-  readingUnit?: "A" | "V" | "Ω";
+  readingUnit?: "A" | "V" | "Ω" | "W";
   /** Magnetic flux density indicator for electromagnets, tesla. */
   fieldT?: number;
   state?: "on" | "off" | "blown" | "open" | "closed" | "unsupported";
@@ -95,7 +95,11 @@ type Elem =
   | { kind: "R"; a: number; b: number; r: number; owner: string; role: string }
   | { kind: "V"; p: number; n: number; v: number; owner: string; role: string }
   | { kind: "I"; from: number; to: number; i: number; owner: string } // current injected into `to`
-  | { kind: "D"; a: number; k: number; vf: number; ron: number; owner: string };
+  | { kind: "D"; a: number; k: number; vf: number; ron: number; owner: string }
+  /** Controlled switch: a–b conducts (ron) when V(cp) − V(cn) > threshold. */
+  | { kind: "Q"; a: number; b: number; ron: number; cp: number; cn: number; threshold: number; owner: string; role: string }
+  /** Controlled voltage source (comparator output): p − n = von when V(cp) − V(cn) > 0, otherwise 0. */
+  | { kind: "VQ"; p: number; n: number; von: number; cp: number; cn: number; owner: string; role: string };
 
 interface Built {
   elems: Elem[];
@@ -185,6 +189,45 @@ function build(doc: SceneDocument, opts: BuildOptions): Built {
         R(x, T("pos"), 1, o.id, "internal");
         break;
       }
+      case "ac-source": {
+        // RMS-equivalent source (exact for resistive loads).
+        const x = node(`${o.id}:__int`);
+        elems.push({ kind: "V", p: x, n: T("b"), v: opts.zeroSources ? 0 : num(o, "amplitude", 5) / Math.SQRT2, owner: o.id, role: "emf" });
+        R(x, T("a"), 0.1, o.id, "internal");
+        break;
+      }
+      case "zener":
+        elems.push({ kind: "D", a: T("anode"), k: T("cathode"), vf: 0.7, ron: 1, owner: o.id });
+        elems.push({ kind: "D", a: T("cathode"), k: T("anode"), vf: num(o, "vz", 5.1), ron: 1, owner: o.id });
+        break;
+      case "npn":
+        elems.push({ kind: "D", a: T("b"), k: T("e"), vf: 0.7, ron: 50, owner: o.id });
+        elems.push({ kind: "Q", a: T("c"), b: T("e"), ron: 2, cp: T("b"), cn: T("e"), threshold: 0.7 + 1e-4 * 50, owner: o.id, role: "ce" });
+        break;
+      case "nmos":
+        elems.push({ kind: "Q", a: T("d"), b: T("s"), ron: 0.5, cp: T("g"), cn: T("s"), threshold: num(o, "vth", 2), owner: o.id, role: "ds" });
+        break;
+      case "comparator": {
+        const x = node(`${o.id}:__int`);
+        elems.push({ kind: "VQ", p: x, n: T("inn"), von: 5, cp: T("inp"), cn: T("inn"), owner: o.id, role: "out" });
+        R(x, T("out"), 100, o.id, "rout");
+        break;
+      }
+      case "relay": {
+        const rc = num(o, "coilResistance", 100);
+        R(T("c1"), T("c2"), rc, o.id, "coil");
+        elems.push({ kind: "Q", a: T("s1"), b: T("s2"), ron: 0.01, cp: T("c1"), cn: T("c2"), threshold: 0.03 * rc, owner: o.id, role: "contact" });
+        // Coil polarity does not matter: add the reverse-polarity control too.
+        elems.push({ kind: "Q", a: T("s1"), b: T("s2"), ron: 0.01, cp: T("c2"), cn: T("c1"), threshold: 0.03 * rc, owner: o.id, role: "contact-r" });
+        break;
+      }
+      case "wattmeter":
+        R(T("ip"), T("in"), AMMETER_RESISTANCE, o.id, "icoil");
+        R(T("vp"), T("vn"), VOLTMETER_RESISTANCE, o.id, "vcoil");
+        break;
+      case "oscilloscope":
+        R(T("pos"), T("neg"), VOLTMETER_RESISTANCE, o.id);
+        break;
       case "resistor":
         R(T("a"), T("b"), num(o, "resistance", 100), o.id);
         break;
@@ -276,6 +319,7 @@ interface Solved {
   v: Float64Array; // node voltages
   vsCurrent: Map<Elem, number>;
   diodeOn: Map<Elem, boolean>;
+  ctrlOn: Map<Elem, boolean>;
   iterations: number;
   converged: boolean;
 }
@@ -288,6 +332,8 @@ function solveBuilt(b: Built): Solved {
     if (e.kind === "R") uf.union(e.a, e.b);
     else if (e.kind === "V") uf.union(e.p, e.n);
     else if (e.kind === "D") uf.union(e.a, e.k);
+    else if (e.kind === "Q") uf.union(e.a, e.b);
+    else if (e.kind === "VQ") uf.union(e.p, e.n);
     else uf.union(e.from, e.to);
   }
   const refOfGroup = new Map<number, number>();
@@ -302,7 +348,7 @@ function solveBuilt(b: Built): Solved {
   const idx = new Int32Array(nodeCount).fill(-1);
   let n = 0;
   for (let i = 0; i < nodeCount; i++) if (!isRef.has(i)) idx[i] = n++;
-  const vsrcs = elems.filter((e) => e.kind === "V");
+  const vsrcs = elems.filter((e) => e.kind === "V" || e.kind === "VQ");
   const size = n + vsrcs.length;
 
   const diodes = elems.filter((e): e is Extract<Elem, { kind: "D" }> => e.kind === "D");
@@ -310,8 +356,11 @@ function solveBuilt(b: Built): Solved {
 
   let last: { x: Float64Array } | null = null;
   let iterations = 0;
-  let converged = diodes.length === 0;
-  const maxIter = diodes.length === 0 ? 1 : 40;
+  const ctrls = elems.filter((e): e is Extract<Elem, { kind: "Q" | "VQ" }> => e.kind === "Q" || e.kind === "VQ");
+  const ctrlOn = new Map<Elem, boolean>(ctrls.map((c) => [c, false]));
+  const nonlinear = diodes.length + ctrls.length;
+  let converged = nonlinear === 0;
+  const maxIter = nonlinear === 0 ? 1 : 60;
 
   for (let iter = 0; iter < maxIter; iter++) {
     iterations++;
@@ -345,10 +394,10 @@ function solveBuilt(b: Built): Solved {
           inject(e.a, e.vf * g);
           inject(e.k, -e.vf * g);
         } else stampG(e.a, e.k, DIODE_OFF_G);
-      }
+      } else if (e.kind === "Q") stampG(e.a, e.b, ctrlOn.get(e) ? 1 / e.ron : DIODE_OFF_G);
     }
     for (const e of vsrcs) {
-      if (e.kind !== "V") continue;
+      if (e.kind !== "V" && e.kind !== "VQ") continue;
       const row = n + k++;
       const ip = idx[e.p]!;
       const inn = idx[e.n]!;
@@ -360,15 +409,23 @@ function solveBuilt(b: Built): Solved {
         A[inn]![row]! -= 1;
         A[row]![inn]! -= 1;
       }
-      z[row] = e.v;
+      z[row] = e.kind === "V" ? e.v : ctrlOn.get(e) ? e.von : 0;
     }
     const out = solveDense(A, z);
-    if (!out.ok) return { ok: false, v: new Float64Array(nodeCount), vsCurrent: new Map(), diodeOn, iterations, converged: false };
+    if (!out.ok) return { ok: false, v: new Float64Array(nodeCount), vsCurrent: new Map(), diodeOn, ctrlOn, iterations, converged: false };
     last = { x: out.x };
-    if (diodes.length === 0) break;
-    // Update diode states.
+    if (nonlinear === 0) break;
+    // Update diode and controlled-switch states.
     let changed = false;
     const volt = (node: number) => (idx[node]! >= 0 ? out.x[idx[node]!]! : 0);
+    for (const c of ctrls) {
+      const ctl = volt(c.cp) - volt(c.cn);
+      const want = c.kind === "Q" ? ctl > c.threshold : ctl > 0;
+      if (want !== ctrlOn.get(c)) {
+        ctrlOn.set(c, want);
+        changed = true;
+      }
+    }
     for (const d of diodes) {
       const vd = volt(d.a) - volt(d.k);
       const on = diodeOn.get(d)!;
@@ -391,7 +448,7 @@ function solveBuilt(b: Built): Solved {
   for (let i = 0; i < nodeCount; i++) v[i] = idx[i]! >= 0 ? x[idx[i]!]! : 0;
   const vsCurrent = new Map<Elem, number>();
   vsrcs.forEach((e, j) => vsCurrent.set(e, x[n + j]!));
-  return { ok: true, v, vsCurrent, diodeOn, iterations, converged };
+  return { ok: true, v, vsCurrent, diodeOn, ctrlOn, iterations, converged };
 }
 
 /* ------------------------------------------------------------------ */
@@ -489,15 +546,18 @@ export function simulateCircuit(doc: SceneDocument): SimulationResult {
     };
 
     switch (model) {
+      case "ac-source":
       case "generator":
       case "battery": {
-        const emf = model === "generator" ? 0.02 * num(o, "rpm", 300) : num(o, "voltage", 9);
+        const ac = model === "ac-source";
+        const emf = model === "generator" ? 0.02 * num(o, "rpm", 300) : ac ? num(o, "amplitude", 5) / Math.SQRT2 : num(o, "voltage", 9);
         const internal = elemsOf(o.id).find((e) => e.kind === "R" && e.role === "internal") as Extract<Elem, { kind: "R" }>;
         const iDelivered = (solved.v[internal.a]! - solved.v[internal.b]!) / internal.r;
-        res.voltage = term("pos") - term("neg");
+        const [tp, tn] = ac ? ["a", "b"] : ["pos", "neg"];
+        res.voltage = term(tp) - term(tn);
         res.current = iDelivered;
         res.power = res.voltage * iDelivered;
-        const wired = wiredTerminals.has(`${o.id}:pos`) && wiredTerminals.has(`${o.id}:neg`);
+        const wired = wiredTerminals.has(`${o.id}:${tp}`) && wiredTerminals.has(`${o.id}:${tn}`);
         if (wired && emf > 0) {
           anySource = true;
           sourceCurrent = Math.max(sourceCurrent, Math.abs(iDelivered));
@@ -611,13 +671,83 @@ export function simulateCircuit(doc: SceneDocument): SimulationResult {
       case "junction":
         res.voltage = 0;
         break;
+      case "zener": {
+        const ds = elemsOf(o.id).filter((e) => e.kind === "D") as Extract<Elem, { kind: "D" }>[];
+        const vd = term("anode") - term("cathode");
+        const fwd = solved.diodeOn.get(ds[0]!) ?? false;
+        const rev = solved.diodeOn.get(ds[1]!) ?? false;
+        res.voltage = vd;
+        res.current = fwd ? (vd - ds[0]!.vf) / ds[0]!.ron : rev ? -(-vd - ds[1]!.vf) / ds[1]!.ron : 0;
+        res.power = vd * res.current;
+        res.state = fwd || rev ? "on" : "off";
+        break;
+      }
+      case "npn":
+      case "nmos": {
+        const sw = elemsOf(o.id).find((e) => e.kind === "Q") as Extract<Elem, { kind: "Q" }>;
+        const on = solved.ctrlOn.get(sw) ?? false;
+        const [hi, lo] = model === "npn" ? ["c", "e"] : ["d", "s"];
+        res.voltage = term(hi) - term(lo);
+        res.current = on ? res.voltage / sw.ron : res.voltage * DIODE_OFF_G;
+        res.power = res.voltage * res.current;
+        res.state = on ? "on" : "off";
+        break;
+      }
+      case "comparator": {
+        const vq = elemsOf(o.id).find((e) => e.kind === "VQ")!;
+        const on = solved.ctrlOn.get(vq) ?? false;
+        res.voltage = term("out") - term("inn");
+        res.current = solved.vsCurrent.get(vq) ?? 0;
+        res.reading = res.voltage;
+        res.readingUnit = "V";
+        res.state = on ? "on" : "off";
+        break;
+      }
+      case "relay": {
+        const contacts = elemsOf(o.id).filter((e) => e.kind === "Q");
+        const on = contacts.some((c) => solved.ctrlOn.get(c));
+        const coil = elemsOf(o.id).find((e) => e.kind === "R" && e.role === "coil") as Extract<Elem, { kind: "R" }>;
+        res.voltage = term("c1") - term("c2");
+        res.current = res.voltage / coil.r;
+        res.power = res.voltage * res.current;
+        res.state = on ? "closed" : "open";
+        res.activity = on ? 1 : 0;
+        break;
+      }
+      case "wattmeter": {
+        const i = (term("ip") - term("in")) / AMMETER_RESISTANCE;
+        const v = term("vp") - term("vn");
+        res.current = i;
+        res.voltage = v;
+        res.reading = v * i;
+        res.readingUnit = "W";
+        break;
+      }
+      case "oscilloscope": {
+        res.voltage = term("pos") - term("neg");
+        res.current = res.voltage / VOLTMETER_RESISTANCE;
+        res.reading = res.voltage;
+        res.readingUnit = "V";
+        // AC sources make the trace a sine wave; record the peak for the display.
+        const acPresent = objects.some((x) => effectiveModel(x) === "ac-source" && wiredTerminals.has(`${x.id}:a`));
+        if (acPresent) {
+          res.state = "on";
+          res.activity = Math.min(1, Math.abs(res.voltage) / 20);
+        }
+        break;
+      }
       default:
-        if (def.simulation.support === "not-simulated") res.state = "unsupported";
+        break;
     }
     result.components[o.id] = res;
   }
 
-  const hasPoweredSource = objects.some((o) => (effectiveModel(o) === "battery" && num(o, "voltage", 9) > 0) || (effectiveModel(o) === "generator" && num(o, "rpm", 300) > 0));
+  const hasPoweredSource = objects.some(
+    (o) =>
+      (effectiveModel(o) === "battery" && num(o, "voltage", 9) > 0) ||
+      (effectiveModel(o) === "generator" && num(o, "rpm", 300) > 0) ||
+      (effectiveModel(o) === "ac-source" && num(o, "amplitude", 5) > 0),
+  );
   const hasLoads = doc.wires.length > 0;
   if (!hasPoweredSource && hasLoads) issues.push({ code: "no-source", severity: "info", componentIds: [] });
   if (anySource && !shorted && sourceCurrent <= CONDUCTING_THRESHOLD)

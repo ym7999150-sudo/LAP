@@ -6,16 +6,17 @@ Real-world models are used **only** where a genuinely matching, properly license
 
 | Source | Licence | Used for |
 |---|---|---|
-| [Poly Haven](https://polyhaven.com) – Chemistry Set (Jiří Ptáček) | CC0 | large/small beaker, test tube, reagent bottle, dropper bottle, retort stand & clamp, test-tube stand |
+| [Poly Haven](https://polyhaven.com) – Chemistry Set (Jiří Ptáček) | CC0 | beakers (250/100 mL), measuring cylinder (tall vessel), test tube, reagent bottle, dropper bottle, retort stand & clamp, test-tube stand |
 | Poly Haven – Bunsen Burner (BKS) | CC0 | Bunsen burner with tripod |
 | Poly Haven – Lightbulb 01, Pull Chain Light Socket (Josh Dean) | CC0 | bulb and lamp holder |
 | Poly Haven – Retro Multimeter (elli moeller) | CC0 | ammeter / voltmeter / ohmmeter (needle animated by the reading) |
 | Poly Haven – Seadogs Compass (Benny Weimer) | CC0 | compass (needle animated by the magnetic field) |
 | [Poly Pizza](https://poly.pizza) – AA battery, rotary dial, funnel, digital scale (Poly by Google) | CC-BY 3.0 | battery, potentiometer, funnel, balance |
 | Poly Pizza – digital multimeter (J-Toastie), push button (Zoe XR), DIP IC (Edward Lynch), oscilloscope (Rob Bogucki), cartridge fuse (moriarty), conical flask (Amanda Roach) | CC-BY 3.0 | matching components |
+| Poly Pizza – portable generator (KolosStudios), desk fan (J-Toastie) | CC-BY 3.0 | generator, fan |
 | Poly Pizza – lever switch (Quaternius), TO-220 transistor & safety glasses (iPoly3D), probe thermometer, hot plate, porcelain bowl (MilkAndBanana) | CC0 | matching components |
 
-Still modelled in code because no matching licensed model was found: resistor, rheostat, capacitor, inductor/coil, electromagnet, thermistor, LDR, LED, diodes, relay, MOSFET, DC/AC supply, motor, buzzer, heater, terminal block, ground, material sample, measuring cylinder, steel-wool pad, pipette, stirring rod, wash bottle, gloves.
+Still modelled in code because no matching licensed model was found: resistor, rheostat, capacitor, inductor/coil, electromagnet, thermistor, LDR, LED, diodes, relay, MOSFET, DC/AC supply, small motor, buzzer, heater, terminal block, ground, material sample, steel-wool pad, pipette, stirring rod, wash bottle, gloves.
 
 Glass models from Poly Haven are loaded as `.gltf` + textures (1k) directly; Poly Pizza models are `.glb`. Wire binding posts (red +, blue −, brass) are drawn by the app on top of every model so connection points are always visible.
 
