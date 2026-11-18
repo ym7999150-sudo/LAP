@@ -1,0 +1,4 @@
+{
+  "$comment": "Locally hosted 3D assets. Every entry must record its source and licence. Currently empty: all equipment is procedurally generated in src/components/lab/models (original work, no third-party assets). See ASSETS.md before adding files.",
+  "assets": []
+}
