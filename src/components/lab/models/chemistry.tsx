@@ -6,6 +6,7 @@ import type { ContainerView } from "@/lib/chem/engine";
 import { getSubstance } from "@/lib/chem/substances";
 import type { SceneObject } from "@/lib/scene/schema";
 import { Bubbles, Flakes, Flame, Puffs, Sparks } from "./particles";
+import { AssetModel } from "../AssetModel";
 
 /** Inner profile of each container: radius as a function of height (local units). */
 export interface ContainerProfile {
@@ -124,6 +125,7 @@ export interface ChemFx {
 
 interface ContainerModelProps {
   obj: SceneObject;
+  assetId?: string;
   view?: ContainerView;
   fx: ChemFx;
   quality: "low" | "medium" | "high";
@@ -131,7 +133,7 @@ interface ContainerModelProps {
 }
 
 /** Glass container with an animated liquid whose level, colour and effects follow the chemistry engine. */
-export function Container({ obj, view, fx, quality }: ContainerModelProps) {
+export function Container({ obj, assetId, view, fx, quality }: ContainerModelProps) {
   const geomKey = profileKey(obj.type);
   const profile = PROFILES[geomKey]!;
   const capacity = view?.capacityMl ?? Number(obj.props.capacity ?? 250);
@@ -194,8 +196,9 @@ export function Container({ obj, view, fx, quality }: ContainerModelProps) {
 
   return (
     <group>
-      <GlassBody profile={profile} quality={quality} />
-      {profile.glass && geomKey !== "test-tube" && <Graduations profile={profile} />}
+      {/* Real glassware model when available (licensed asset), procedural glass otherwise */}
+      {assetId ? <AssetModel assetId={assetId} fallback={<GlassBody profile={profile} quality={quality} />} /> : <GlassBody profile={profile} quality={quality} />}
+      {!assetId && profile.glass && geomKey !== "test-tube" && <Graduations profile={profile} />}
       {/* Liquid */}
       <mesh ref={liquidRef} geometry={fullGeo} renderOrder={1}>
         <meshStandardMaterial ref={matRef} transparent roughness={0.15} metalness={0} depthWrite={false} />

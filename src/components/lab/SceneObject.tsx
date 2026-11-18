@@ -14,6 +14,7 @@ import { useEditor } from "./store";
 import { useSim } from "./useSimulation";
 import { pourPose } from "./PourFx";
 import { AssetModel } from "./AssetModel";
+import { AnalogMeterOverlay, BulbOverlay, BurnerFlame, CompassOverlay, DigitalMeterOverlay, StateBadge } from "./models/overlays";
 
 const floor = new Plane(new Vector3(0, 1, 0), 0);
 const hit = new Vector3();
@@ -43,17 +44,34 @@ function Terminals({ obj }: { obj: SObj }) {
     <group>
       {def.terminals.map((t) => {
         const isHover = hover?.objectId === obj.id && hover.terminalId === t.id;
-        const color = t.polarity === "+" ? "#ef4444" : t.polarity === "-" ? "#111827" : "#c8a24a";
+        // Clearly visible binding post: red = positive, blue = negative, brass = unpolarised.
+        const color = t.polarity === "+" ? "#ef4444" : t.polarity === "-" ? "#3b82f6" : "#d4a72c";
+        const isConn = connected.has(t.id);
         return (
           <group key={t.id} position={t.local}>
-            <mesh>
-              <cylinderGeometry args={[0.028, 0.032, 0.05, 16]} />
-              <meshStandardMaterial color={color} metalness={0.7} roughness={0.3} emissive={isHover ? "#22d3ee" : connected.has(t.id) ? "#16a34a" : "#000"} emissiveIntensity={isHover ? 1 : connected.has(t.id) ? 0.35 : 0} />
+            <mesh castShadow>
+              <cylinderGeometry args={[0.022, 0.022, 0.07, 16]} />
+              <meshStandardMaterial color="#d1d5db" metalness={0.9} roughness={0.25} />
             </mesh>
-            {!connected.has(t.id) && showBig && (
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
-                <ringGeometry args={[0.045, 0.06, 24]} />
-                <meshBasicMaterial color="#22d3ee" transparent opacity={0.8} />
+            <mesh position={[0, 0.045, 0]} castShadow>
+              <cylinderGeometry args={[0.04, 0.04, 0.035, 20]} />
+              <meshStandardMaterial color={color} metalness={0.35} roughness={0.35} emissive={isHover ? "#22d3ee" : color} emissiveIntensity={isHover ? 1.2 : 0.35} />
+            </mesh>
+            {/* Always-visible connection ring; pulses wider while wiring, turns green when connected */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.066, 0]}>
+              <ringGeometry args={[showBig && !isConn ? 0.048 : 0.044, showBig && !isConn ? 0.07 : 0.054, 32]} />
+              <meshBasicMaterial color={isHover ? "#ffffff" : isConn ? "#22c55e" : "#22d3ee"} transparent opacity={0.95} toneMapped={false} />
+            </mesh>
+            {t.polarity && (
+              <mesh position={[0, 0.067, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[0.04, 0.008]} />
+                <meshBasicMaterial color="#ffffff" toneMapped={false} />
+              </mesh>
+            )}
+            {t.polarity === "+" && (
+              <mesh position={[0, 0.067, 0]} rotation={[-Math.PI / 2, 0, Math.PI / 2]}>
+                <planeGeometry args={[0.04, 0.008]} />
+                <meshBasicMaterial color="#ffffff" toneMapped={false} />
               </mesh>
             )}
             {/* Generous invisible hit target for mouse and touch */}
@@ -91,8 +109,72 @@ function Terminals({ obj }: { obj: SObj }) {
 /** Uses a licensed GLB from the asset manifest when one is registered, otherwise the procedural model. */
 function Model({ obj, quality }: { obj: SObj; quality: Quality }) {
   const def = getComponentDef(obj.type)!;
+  const sim = useSim((s) => s.circuit.components[obj.id]);
   const procedural = <ProceduralModel obj={obj} quality={quality} />;
-  return def.assetId ? <AssetModel assetId={def.assetId} fallback={procedural} /> : procedural;
+  // Containers render their real glass inside <Container> so the simulated liquid stays inside it.
+  if (!def.assetId || CONTAINER_TYPES.has(obj.type)) return procedural;
+  switch (obj.type) {
+    case "bulb":
+      return <BulbOverlay sim={sim} quality={quality} />;
+    case "ammeter":
+    case "voltmeter":
+    case "ohmmeter":
+      return <AnalogMeterOverlay obj={obj} sim={sim} />;
+    case "multimeter":
+      return <DigitalMeterOverlay sim={sim} />;
+    case "compass":
+      return <CompassFromSim obj={obj} />;
+    case "battery":
+      return (
+        <>
+          <AssetModel assetId={def.assetId} fallback={procedural} />
+          <StateBadge text={`${obj.props.voltage ?? 9} V`} tone="off" y={0.32} />
+        </>
+      );
+    case "switch":
+    case "push-button": {
+      const closed = obj.props.closed === true;
+      return (
+        <>
+          <AssetModel assetId={def.assetId} fallback={procedural} />
+          <StateBadge text={closed ? "ON ●" : "OFF ○"} tone={closed ? "on" : "off"} y={0.3} />
+        </>
+      );
+    }
+    case "fuse": {
+      const blown = sim?.state === "blown" || obj.props.blown === true;
+      return (
+        <>
+          <AssetModel assetId={def.assetId} fallback={procedural} />
+          {blown && <StateBadge text="✕ BLOWN" tone="bad" y={0.22} />}
+        </>
+      );
+    }
+    case "bunsen-burner":
+      return (
+        <>
+          <AssetModel assetId={def.assetId} fallback={procedural} />
+          <BurnerFlame lit={obj.props.lit !== false} />
+        </>
+      );
+    default:
+      return <AssetModel assetId={def.assetId} fallback={procedural} />;
+  }
+}
+
+function CompassFromSim({ obj }: { obj: SObj }) {
+  const deflection = useSim((s) => {
+    let best = 0;
+    for (const o of useEditor.getState().doc.objects) {
+      if (o.type !== "electromagnet") continue;
+      const f = s.circuit.components[o.id]?.fieldT ?? 0;
+      const d = Math.hypot(o.position[0] - obj.position[0], o.position[2] - obj.position[2]);
+      const k = Math.min(1, (f * 30) / (1 + d * d * 4));
+      if (k > Math.abs(best)) best = k * Math.atan2(o.position[0] - obj.position[0], o.position[2] - obj.position[2]);
+    }
+    return best;
+  });
+  return <CompassOverlay deflection={deflection} />;
 }
 
 function ProceduralModel({ obj, quality }: { obj: SObj; quality: Quality }) {
@@ -117,7 +199,7 @@ function ProceduralModel({ obj, quality }: { obj: SObj; quality: Quality }) {
     const M = PHYSICS_MODELS[def.geometry];
     return M ? <M obj={obj} sim={sim} quality={quality} deflection={deflection} /> : null;
   }
-  if (CONTAINER_TYPES.has(obj.type)) return <Container obj={obj} view={view} fx={fx ?? { gas: 0, precip: 0, flame: 0, sparks: 0, steam: 0, smoke: 0, flash: 0 }} quality={quality} />;
+  if (CONTAINER_TYPES.has(obj.type)) return <Container obj={obj} assetId={def.assetId} view={view} fx={fx ?? { gas: 0, precip: 0, flame: 0, sparks: 0, steam: 0, smoke: 0, flash: 0 }} quality={quality} />;
   switch (def.geometry) {
     case "bottle":
       return <Bottle obj={obj} />;

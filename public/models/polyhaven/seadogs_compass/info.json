@@ -1,0 +1,14 @@
+{
+ "id": "seadogs_compass",
+ "name": "Seadogs Compass",
+ "authors": {
+  "Benny Weimer": "All"
+ },
+ "license": "CC0-1.0",
+ "source": "https://polyhaven.com/a/seadogs_compass",
+ "dimensions": [
+  81.29258453845978,
+  150.05110204219818,
+  87.21982222050428
+ ]
+}

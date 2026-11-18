@@ -2,27 +2,24 @@
 
 ## 3D models
 
-All laboratory equipment currently in LabVerse 3D is **procedurally generated in code** (`src/components/lab/models/`) — original work, no third-party meshes or textures. Nothing is fetched from external model URLs at runtime.
+Real-world models are used **only** where a genuinely matching, properly licensed model exists. Components without a matching model are modelled in code (`src/components/lab/models/`). The full list with authors is in `public/models/manifest.json` and shown in the app at `/credits`.
 
-The manifest `public/models/manifest.json` is empty on purpose. To add a downloaded model:
+| Source | Licence | Used for |
+|---|---|---|
+| [Poly Haven](https://polyhaven.com) – Chemistry Set (Jiří Ptáček) | CC0 | large/small beaker, test tube, reagent bottle, dropper bottle, retort stand & clamp, test-tube stand |
+| Poly Haven – Bunsen Burner (BKS) | CC0 | Bunsen burner with tripod |
+| Poly Haven – Lightbulb 01, Pull Chain Light Socket (Josh Dean) | CC0 | bulb and lamp holder |
+| Poly Haven – Retro Multimeter (elli moeller) | CC0 | ammeter / voltmeter / ohmmeter (needle animated by the reading) |
+| Poly Haven – Seadogs Compass (Benny Weimer) | CC0 | compass (needle animated by the magnetic field) |
+| [Poly Pizza](https://poly.pizza) – AA battery, rotary dial, funnel, digital scale (Poly by Google) | CC-BY 3.0 | battery, potentiometer, funnel, balance |
+| Poly Pizza – digital multimeter (J-Toastie), push button (Zoe XR), DIP IC (Edward Lynch), oscilloscope (Rob Bogucki), cartridge fuse (moriarty), conical flask (Amanda Roach) | CC-BY 3.0 | matching components |
+| Poly Pizza – lever switch (Quaternius), TO-220 transistor & safety glasses (iPoly3D), probe thermometer, hot plate, porcelain bowl (MilkAndBanana) | CC0 | matching components |
 
-1. Use only assets whose licence permits redistribution in your deployment (CC0 / CC-BY with attribution / explicitly commercial-friendly). Good sources: Khronos glTF Sample Assets, Poly Haven (CC0), properly licensed Sketchfab downloads, your own Blender exports. Do not scrape or bypass download restrictions. Google Poly was shut down in 2021; archived copies are not a reliable licence record.
-2. Optimise (`npx gltf-transform optimize in.glb out.glb --compress draco --texture-compress webp`) and place the file in `public/models/`.
-3. Add an entry:
-   ```json
-   {
-     "id": "beaker-glb",
-     "name": "Beaker",
-     "path": "/models/beaker.glb",
-     "source": "https://…",
-     "license": "CC0-1.0",
-     "attribution": "Author name (if required)",
-     "intendedUse": "Chemistry glassware",
-     "fallback": "beaker",
-     "targetSize": 0.45
-   }
-   ```
-4. Set `assetId: "beaker-glb"` on the component in `src/lib/registry/*.ts`. `AssetModel` normalises scale, sits the model on the table, caches it, and falls back to the procedural model if loading fails.
+Still modelled in code because no matching licensed model was found: resistor, rheostat, capacitor, inductor/coil, electromagnet, thermistor, LDR, LED, diodes, relay, MOSFET, DC/AC supply, motor, buzzer, heater, terminal block, ground, material sample, measuring cylinder, steel-wool pad, pipette, stirring rod, wash bottle, gloves.
+
+Glass models from Poly Haven are loaded as `.gltf` + textures (1k) directly; Poly Pizza models are `.glb`. Wire binding posts (red +, blue −, brass) are drawn by the app on top of every model so connection points are always visible.
+
+To add a model: check the licence, place the file under `public/models/`, add a manifest entry (`fit`, `rotation`, `nodes`), and map the component in `ASSET_MAP` (`src/lib/registry/index.ts`).
 
 ## Sounds
 

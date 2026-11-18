@@ -1,4 +1,472 @@
 {
-  "$comment": "Locally hosted 3D assets. Every entry must record its source and licence. Currently empty: all equipment is procedurally generated in src/components/lab/models (original work, no third-party assets). See ASSETS.md before adding files.",
-  "assets": []
+ "$comment": "Locally hosted, licence-checked 3D assets. fit = target bounding box [x,y,z] in scene units (null = proportional); rotation in degrees applied before fitting; nodes = subset of named nodes to keep. Every entry records source, author and licence; CC-BY entries are credited on the /credits page.",
+ "assets": [
+  {
+   "id": "ph-beaker-large",
+   "name": "Beaker (large)",
+   "path": "/models/polyhaven/chemistry_set/chemistry_set.gltf",
+   "nodes": [
+    "chemistry_set_beaker_large"
+   ],
+   "fit": [
+    0.38,
+    0.43,
+    0.38
+   ],
+   "source": "https://polyhaven.com/a/chemistry_set",
+   "author": "Jiří Ptáček",
+   "license": "CC0-1.0",
+   "intendedUse": "beaker-250 glass (liquid is simulated inside)"
+  },
+  {
+   "id": "ph-beaker-small",
+   "name": "Beaker (small)",
+   "path": "/models/polyhaven/chemistry_set/chemistry_set.gltf",
+   "nodes": [
+    "chemistry_set_beaker_small"
+   ],
+   "fit": [
+    0.27,
+    0.31,
+    0.27
+   ],
+   "source": "https://polyhaven.com/a/chemistry_set",
+   "author": "Jiří Ptáček",
+   "license": "CC0-1.0",
+   "intendedUse": "beaker-100 glass"
+  },
+  {
+   "id": "ph-test-tube",
+   "name": "Test tube",
+   "path": "/models/polyhaven/chemistry_set/chemistry_set.gltf",
+   "nodes": [
+    "chemistry_set_test_tube_a"
+   ],
+   "fit": [
+    0.095,
+    0.5,
+    0.095
+   ],
+   "source": "https://polyhaven.com/a/chemistry_set",
+   "author": "Jiří Ptáček",
+   "license": "CC0-1.0",
+   "intendedUse": "test-tube glass"
+  },
+  {
+   "id": "ph-reagent-bottle",
+   "name": "Brown reagent bottle",
+   "path": "/models/polyhaven/chemistry_set/chemistry_set.gltf",
+   "nodes": [
+    "chemistry_set_bottle_dark_a",
+    "chemistry_set_bottle_dark_a_lid"
+   ],
+   "fit": [
+    null,
+    0.44,
+    null
+   ],
+   "source": "https://polyhaven.com/a/chemistry_set",
+   "author": "Jiří Ptáček",
+   "license": "CC0-1.0",
+   "intendedUse": "reagent-bottle"
+  },
+  {
+   "id": "ph-dropper-bottle",
+   "name": "Dropper bottle",
+   "path": "/models/polyhaven/chemistry_set/chemistry_set.gltf",
+   "nodes": [
+    "chemistry_set_bottle_clear_e",
+    "chemistry_set_bottle_clear_e_dropper"
+   ],
+   "fit": [
+    null,
+    0.3,
+    null
+   ],
+   "source": "https://polyhaven.com/a/chemistry_set",
+   "author": "Jiří Ptáček",
+   "license": "CC0-1.0",
+   "intendedUse": "dropper"
+  },
+  {
+   "id": "ph-clamp-stand",
+   "name": "Retort stand with clamp",
+   "path": "/models/polyhaven/chemistry_set/chemistry_set.gltf",
+   "nodes": [
+    "chemistry_set_clamp_stand",
+    "chemistry_set_clamp"
+   ],
+   "fit": [
+    null,
+    0.9,
+    null
+   ],
+   "source": "https://polyhaven.com/a/chemistry_set",
+   "author": "Jiří Ptáček",
+   "license": "CC0-1.0",
+   "intendedUse": "lab-stand"
+  },
+  {
+   "id": "ph-test-tube-rack",
+   "name": "Test tube stand",
+   "path": "/models/polyhaven/chemistry_set/chemistry_set.gltf",
+   "nodes": [
+    "chemistry_set_test_tube_stand_a"
+   ],
+   "fit": [
+    0.7,
+    null,
+    null
+   ],
+   "source": "https://polyhaven.com/a/chemistry_set",
+   "author": "Jiří Ptáček",
+   "license": "CC0-1.0",
+   "intendedUse": "test-tube-rack"
+  },
+  {
+   "id": "ph-bunsen-burner",
+   "name": "Bunsen burner with tripod",
+   "path": "/models/polyhaven/bunsen_burner/bunsen_burner.gltf",
+   "fit": [
+    null,
+    0.45,
+    null
+   ],
+   "source": "https://polyhaven.com/a/bunsen_burner",
+   "author": "BKS",
+   "license": "CC0-1.0",
+   "intendedUse": "bunsen-burner (flame is simulated)"
+  },
+  {
+   "id": "ph-lightbulb",
+   "name": "Incandescent light bulb",
+   "path": "/models/polyhaven/lightbulb_01/lightbulb_01.gltf",
+   "fit": [
+    null,
+    0.3,
+    null
+   ],
+   "offsetY": 0.2,
+   "source": "https://polyhaven.com/a/lightbulb_01",
+   "author": "Josh Dean",
+   "license": "CC0-1.0",
+   "intendedUse": "bulb (glow is simulated)"
+  },
+  {
+   "id": "ph-lamp-socket",
+   "name": "Lamp socket",
+   "path": "/models/polyhaven/pull_chain_light_socket/pull_chain_light_socket.gltf",
+   "nodes": [
+    "pull_chain_light_socket"
+   ],
+   "rotation": [
+    180,
+    0,
+    0
+   ],
+   "fit": [
+    null,
+    0.22,
+    null
+   ],
+   "source": "https://polyhaven.com/a/pull_chain_light_socket",
+   "author": "Josh Dean",
+   "license": "CC0-1.0",
+   "intendedUse": "bulb holder"
+  },
+  {
+   "id": "ph-analog-meter",
+   "name": "Retro analog multimeter",
+   "path": "/models/polyhaven/retro_multimeter/retro_multimeter.gltf",
+   "nodes": [
+    "retro_multimeter_LOD0",
+    "retro_multimeter_buttons_LOD0",
+    "retro_multimeter_dial_LOD0",
+    "retro_multimeter_knob_LOD0",
+    "retro_multimeter_needle_LOD0",
+    "retro_multimeter_handle_LOD0"
+   ],
+   "rotation": [
+    -90,
+    0,
+    0
+   ],
+   "fit": [
+    0.5,
+    null,
+    null
+   ],
+   "source": "https://polyhaven.com/a/retro_multimeter",
+   "author": "elli moeller",
+   "license": "CC0-1.0",
+   "intendedUse": "ammeter / voltmeter / ohmmeter (needle deflects with the reading)"
+  },
+  {
+   "id": "ph-compass",
+   "name": "Brass compass",
+   "path": "/models/polyhaven/seadogs_compass/seadogs_compass.gltf",
+   "nodes": [
+    "seadogs_compass",
+    "seadogs_compass_needle"
+   ],
+   "fit": [
+    0.32,
+    null,
+    null
+   ],
+   "source": "https://polyhaven.com/a/seadogs_compass",
+   "author": "Benny Weimer",
+   "license": "CC0-1.0",
+   "intendedUse": "compass (needle deflects with magnetic field)"
+  },
+  {
+   "id": "pp-aa-battery",
+   "name": "AA battery",
+   "path": "/models/polypizza/2TKK0wpiWPw.glb",
+   "rotation": [
+    0,
+    0,
+    -90
+   ],
+   "fit": [
+    0.72,
+    null,
+    null
+   ],
+   "source": "https://poly.pizza/m/2TKK0wpiWPw",
+   "author": "Poly by Google",
+   "license": "CC-BY-3.0",
+   "intendedUse": "battery"
+  },
+  {
+   "id": "pp-digital-multimeter",
+   "name": "Digital multimeter",
+   "path": "/models/polypizza/yMU4bpnyME.glb",
+   "rotation": [
+    -90,
+    0,
+    0
+   ],
+   "fit": [
+    null,
+    null,
+    0.55
+   ],
+   "source": "https://poly.pizza/m/yMU4bpnyME",
+   "author": "J-Toastie",
+   "license": "CC-BY-3.0",
+   "intendedUse": "multimeter"
+  },
+  {
+   "id": "pp-lever-switch",
+   "name": "Lever switch",
+   "path": "/models/polypizza/KfauRUSZer.glb",
+   "fit": [
+    0.6,
+    null,
+    null
+   ],
+   "source": "https://poly.pizza/m/KfauRUSZer",
+   "author": "Quaternius",
+   "license": "CC0-1.0",
+   "intendedUse": "switch"
+  },
+  {
+   "id": "pp-push-button",
+   "name": "Push button",
+   "path": "/models/polypizza/cHlG7BhDvek.glb",
+   "fit": [
+    0.3,
+    null,
+    null
+   ],
+   "source": "https://poly.pizza/m/cHlG7BhDvek",
+   "author": "Zoe XR",
+   "license": "CC-BY-3.0",
+   "intendedUse": "push-button"
+  },
+  {
+   "id": "pp-transistor",
+   "name": "TO-220 transistor",
+   "path": "/models/polypizza/VfE66xZVVR.glb",
+   "rotation": [
+    -90,
+    0,
+    0
+   ],
+   "fit": [
+    0.13,
+    null,
+    null
+   ],
+   "source": "https://poly.pizza/m/VfE66xZVVR",
+   "author": "iPoly3D",
+   "license": "CC0-1.0",
+   "intendedUse": "npn-transistor (TO-220 package)"
+  },
+  {
+   "id": "pp-dip-ic",
+   "name": "DIP integrated circuit",
+   "path": "/models/polypizza/0TrCsMU0I--.glb",
+   "fit": [
+    0.34,
+    null,
+    null
+   ],
+   "source": "https://poly.pizza/m/0TrCsMU0I--",
+   "author": "Edward Lynch",
+   "license": "CC-BY-3.0",
+   "intendedUse": "op-amp (8-pin DIP package)",
+   "rotation": [
+    0,
+    90,
+    0
+   ]
+  },
+  {
+   "id": "pp-oscilloscope",
+   "name": "Oscilloscope",
+   "path": "/models/polypizza/fVPf93M0i_x.glb",
+   "fit": [
+    0.62,
+    null,
+    null
+   ],
+   "source": "https://poly.pizza/m/fVPf93M0i_x",
+   "author": "Rob Bogucki",
+   "license": "CC-BY-3.0",
+   "intendedUse": "oscilloscope"
+  },
+  {
+   "id": "pp-cartridge-fuse",
+   "name": "Cartridge fuse",
+   "path": "/models/polypizza/CJe7ZyhSVV.glb",
+   "rotation": [
+    0,
+    0,
+    90
+   ],
+   "fit": [
+    0.4,
+    null,
+    null
+   ],
+   "source": "https://poly.pizza/m/CJe7ZyhSVV",
+   "author": "moriarty",
+   "license": "CC-BY-3.0",
+   "intendedUse": "fuse"
+  },
+  {
+   "id": "pp-dial-knob",
+   "name": "Rotary dial",
+   "path": "/models/polypizza/exV-HFm2aVl.glb",
+   "fit": [
+    0.5,
+    null,
+    null
+   ],
+   "source": "https://poly.pizza/m/exV-HFm2aVl",
+   "author": "Poly by Google",
+   "license": "CC-BY-3.0",
+   "intendedUse": "potentiometer"
+  },
+  {
+   "id": "pp-safety-glasses",
+   "name": "Safety glasses",
+   "path": "/models/polypizza/DBEk0SMQCt.glb",
+   "fit": [
+    0.32,
+    null,
+    null
+   ],
+   "source": "https://poly.pizza/m/DBEk0SMQCt",
+   "author": "iPoly3D",
+   "license": "CC0-1.0",
+   "intendedUse": "goggles"
+  },
+  {
+   "id": "pp-thermometer",
+   "name": "Digital probe thermometer",
+   "path": "/models/polypizza/TlbiZ7hiBa.glb",
+   "fit": [
+    null,
+    0.4,
+    null
+   ],
+   "source": "https://poly.pizza/m/TlbiZ7hiBa",
+   "author": "MilkAndBanana",
+   "license": "CC0-1.0",
+   "intendedUse": "thermometer"
+  },
+  {
+   "id": "pp-funnel",
+   "name": "Funnel",
+   "path": "/models/polypizza/46SWQ4tgI_V.glb",
+   "fit": [
+    null,
+    0.3,
+    null
+   ],
+   "source": "https://poly.pizza/m/46SWQ4tgI_V",
+   "author": "Poly by Google",
+   "license": "CC-BY-3.0",
+   "intendedUse": "funnel"
+  },
+  {
+   "id": "pp-digital-scale",
+   "name": "Digital scale",
+   "path": "/models/polypizza/4cFp8h-mxTV.glb",
+   "fit": [
+    0.5,
+    null,
+    null
+   ],
+   "source": "https://poly.pizza/m/4cFp8h-mxTV",
+   "author": "Poly by Google",
+   "license": "CC-BY-3.0",
+   "intendedUse": "balance"
+  },
+  {
+   "id": "pp-hot-plate",
+   "name": "Electric hot plate",
+   "path": "/models/polypizza/I8YKKSzDPE.glb",
+   "fit": [
+    0.5,
+    null,
+    null
+   ],
+   "source": "https://poly.pizza/m/I8YKKSzDPE",
+   "author": "MilkAndBanana",
+   "license": "CC0-1.0",
+   "intendedUse": "hot-plate"
+  },
+  {
+   "id": "pp-porcelain-bowl",
+   "name": "Porcelain bowl",
+   "path": "/models/polypizza/8TzJ3FF2ow.glb",
+   "fit": [
+    0.24,
+    0.14,
+    0.24
+   ],
+   "source": "https://poly.pizza/m/8TzJ3FF2ow",
+   "author": "MilkAndBanana",
+   "license": "CC0-1.0",
+   "intendedUse": "crucible"
+  },
+  {
+   "id": "pp-conical-flask",
+   "name": "Conical flask",
+   "path": "/models/polypizza/19Jm93tRYF0.glb",
+   "fit": [
+    0.45,
+    0.5,
+    0.45
+   ],
+   "source": "https://poly.pizza/m/19Jm93tRYF0",
+   "author": "Amanda Roach",
+   "license": "CC-BY-3.0",
+   "intendedUse": "conical-flask glass"
+  }
+ ]
 }

@@ -1,0 +1,14 @@
+{
+ "id": "chemistry_set",
+ "name": "Chemistry Set",
+ "authors": {
+  "Jiří Ptáček": "All"
+ },
+ "license": "CC0-1.0",
+ "source": "https://polyhaven.com/a/chemistry_set",
+ "dimensions": [
+  1078.3504843711853,
+  353.92560064792633,
+  429.01350278407335
+ ]
+}

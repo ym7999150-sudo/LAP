@@ -1,5 +1,6 @@
 import {
   Atom,
+  Box,
   Award,
   BookOpen,
   Cpu,
@@ -61,6 +62,7 @@ export const NAV_GROUPS: { items: NavItem[] }[] = [
       { href: "/profile", label: "nav_profile", icon: User },
       { href: "/settings", label: "nav_settings", icon: Settings },
       { href: "/help", label: "nav_help", icon: HelpCircle },
+      { href: "/credits", label: "nav_credits", icon: Box },
       { href: "/admin", label: "nav_admin", icon: Shield, admin: true },
     ],
   },

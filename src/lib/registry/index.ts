@@ -4,8 +4,44 @@ import type { ComponentDef, Lab } from "./types";
 
 export * from "./types";
 
+/**
+ * Real 3D models (public/models/manifest.json) mapped to components. Only models that genuinely
+ * match the component are listed; everything else uses its procedural model.
+ */
+export const ASSET_MAP: Record<string, string> = {
+  battery: "pp-aa-battery",
+  bulb: "ph-lightbulb",
+  switch: "pp-lever-switch",
+  "push-button": "pp-push-button",
+  fuse: "pp-cartridge-fuse",
+  "npn-transistor": "pp-transistor",
+  "op-amp": "pp-dip-ic",
+  potentiometer: "pp-dial-knob",
+  ammeter: "ph-analog-meter",
+  voltmeter: "ph-analog-meter",
+  ohmmeter: "ph-analog-meter",
+  multimeter: "pp-digital-multimeter",
+  oscilloscope: "pp-oscilloscope",
+  compass: "ph-compass",
+  "beaker-250": "ph-beaker-large",
+  "beaker-100": "ph-beaker-small",
+  "test-tube": "ph-test-tube",
+  "conical-flask": "pp-conical-flask",
+  crucible: "pp-porcelain-bowl",
+  "reagent-bottle": "ph-reagent-bottle",
+  "bunsen-burner": "ph-bunsen-burner",
+  "hot-plate": "pp-hot-plate",
+  thermometer: "pp-thermometer",
+  balance: "pp-digital-scale",
+  dropper: "ph-dropper-bottle",
+  funnel: "pp-funnel",
+  "test-tube-rack": "ph-test-tube-rack",
+  "lab-stand": "ph-clamp-stand",
+  goggles: "pp-safety-glasses",
+};
+
 /** Central component registry. Add new components to the lists above — the editor reads everything from here. */
-export const COMPONENTS: ComponentDef[] = [...PHYSICS_COMPONENTS, ...CHEMISTRY_COMPONENTS];
+export const COMPONENTS: ComponentDef[] = [...PHYSICS_COMPONENTS, ...CHEMISTRY_COMPONENTS].map((c) => (ASSET_MAP[c.type] ? { ...c, assetId: ASSET_MAP[c.type] } : c));
 
 const byType = new Map(COMPONENTS.map((c) => [c.type, c]));
 

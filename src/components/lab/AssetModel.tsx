@@ -1,22 +1,37 @@
 "use client";
 import { useGLTF } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
 import { Component, Suspense, useMemo, type ReactNode } from "react";
-import { Box3, Vector3, type Object3D } from "three";
+import { Box3, DoubleSide, Euler, Group, MathUtils, MeshPhysicalMaterial, Vector3, type Mesh, type Object3D } from "three";
 import manifest from "../../../public/models/manifest.json";
 
 export interface AssetEntry {
   id: string;
   name: string;
-  path: string; // served from /public, e.g. /models/beaker.glb
+  path: string;
+  nodes?: string[];
+  rotation?: [number, number, number]; // degrees
+  fit?: [number | null, number | null, number | null];
+  offsetY?: number;
   source: string;
+  author: string;
   license: string;
-  attribution: string;
   intendedUse: string;
-  fallback: string; // procedural geometry key used when the file is missing or fails
-  targetSize: number; // longest dimension in scene units after normalisation
 }
 
-const ASSETS = (manifest as { assets: AssetEntry[] }).assets;
+const GLASS = new MeshPhysicalMaterial({
+  color: "#e6f4ff",
+  roughness: 0.04,
+  metalness: 0,
+  transparent: true,
+  opacity: 0.22,
+  side: DoubleSide,
+  depthWrite: false,
+  clearcoat: 1,
+  clearcoatRoughness: 0.05,
+});
+
+export const ASSETS =(manifest as unknown as { assets: AssetEntry[] }).assets;
 export const getAsset = (id?: string) => (id ? ASSETS.find((a) => a.id === id) : undefined);
 
 class LoadBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
@@ -25,43 +40,75 @@ class LoadBoundary extends Component<{ fallback: ReactNode; children: ReactNode 
     return { failed: true };
   }
   componentDidCatch(e: unknown) {
-    console.warn("GLB asset failed to load; using procedural fallback", e);
+    console.warn("3D asset failed to load; using procedural fallback", e);
   }
   render() {
     return this.state.failed ? this.props.fallback : this.props.children;
   }
 }
 
-function Loaded({ entry }: { entry: AssetEntry }) {
-  const { scene } = useGLTF(entry.path); // cached by URL across instances
-  const object = useMemo(() => {
-    const clone: Object3D = scene.clone(true);
-    // Normalise scale so the longest side matches targetSize, and sit the model on the table.
-    const box = new Box3().setFromObject(clone);
+/** Called every frame with the model root so callers can animate named parts (needles, levers). */
+export type Drive = (root: Object3D, dt: number) => void;
+
+function Loaded({ entry, drive }: { entry: AssetEntry; drive?: Drive }) {
+  const { scene } = useGLTF(entry.path); // cached per URL, shared across instances
+  const root = useMemo(() => {
+    const src = scene.clone(true);
+    // Keep only requested nodes, each re-centred in the collection's space.
+    const holder = new Group();
+    if (entry.nodes?.length) {
+      for (const name of entry.nodes) {
+        const n = src.getObjectByName(name);
+        if (n) holder.add(n);
+      }
+    } else holder.add(src);
+    const rotated = new Group();
+    rotated.add(holder);
+    if (entry.rotation) rotated.rotation.copy(new Euler(...entry.rotation.map((d) => MathUtils.degToRad(d)) as [number, number, number]));
+    rotated.updateMatrixWorld(true);
+    const box = new Box3().setFromObject(rotated);
     const size = box.getSize(new Vector3());
-    const k = entry.targetSize / Math.max(size.x, size.y, size.z, 1e-6);
-    clone.scale.setScalar(k);
-    const b2 = new Box3().setFromObject(clone);
+    const fit = entry.fit ?? [null, 0.3, null];
+    const ratios = fit.map((f, i) => (f == null ? null : f / Math.max(1e-6, size.getComponent(i))));
+    const uniform = Math.min(...(ratios.filter((r) => r != null) as number[]));
+    const s = new Vector3(...ratios.map((r) => (r == null || ratios.some((x) => x == null) ? uniform : r)) as [number, number, number]);
+    const scaled = new Group();
+    scaled.add(rotated);
+    scaled.scale.copy(s);
+    scaled.updateMatrixWorld(true);
+    const b2 = new Box3().setFromObject(scaled);
     const c = b2.getCenter(new Vector3());
-    clone.position.set(-c.x, -b2.min.y, -c.z);
-    clone.traverse((o) => {
-      const m = o as Object3D & { castShadow?: boolean; receiveShadow?: boolean };
+    scaled.position.set(-c.x, -b2.min.y + (entry.offsetY ?? 0), -c.z);
+    const out = new Group();
+    out.add(scaled);
+    out.traverse((o) => {
+      const m = o as Mesh;
+      if (!m.isMesh) return;
       m.castShadow = true;
       m.receiveShadow = true;
+      // Blended glass textures render dark in a dark scene; use a clear physical glass instead
+      // so simulated liquids inside stay visible.
+      const mat = m.material as { name?: string };
+      if (mat?.name && /glass/i.test(mat.name)) {
+        m.material = GLASS;
+        m.castShadow = false;
+        m.renderOrder = 2;
+      }
     });
-    return clone;
-  }, [scene, entry.targetSize]);
-  return <primitive object={object} />;
+    return out;
+  }, [scene, entry]);
+  useFrame((_, dt) => drive?.(root, dt));
+  return <primitive object={root} />;
 }
 
-/** Renders a locally hosted, licence-checked GLB/GLTF model with the procedural model as fallback. */
-export function AssetModel({ assetId, fallback }: { assetId?: string; fallback: ReactNode }) {
+/** Renders a locally hosted, licence-checked model; falls back to the procedural model on error. */
+export function AssetModel({ assetId, fallback, drive }: { assetId?: string; fallback: ReactNode; drive?: Drive }) {
   const entry = getAsset(assetId);
   if (!entry) return <>{fallback}</>;
   return (
     <LoadBoundary fallback={fallback}>
       <Suspense fallback={fallback}>
-        <Loaded entry={entry} />
+        <Loaded entry={entry} drive={drive} />
       </Suspense>
     </LoadBoundary>
   );

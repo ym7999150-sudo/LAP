@@ -1,0 +1,14 @@
+{
+ "id": "bunsen_burner",
+ "name": "Bunsen Burner",
+ "authors": {
+  "BKS": "All"
+ },
+ "license": "CC0-1.0",
+ "source": "https://polyhaven.com/a/bunsen_burner",
+ "dimensions": [
+  138.89388740062714,
+  138.89388740062714,
+  173.1255203485489
+ ]
+}
