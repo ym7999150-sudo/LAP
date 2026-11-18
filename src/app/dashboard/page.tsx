@@ -1,5 +1,5 @@
 "use client";
-import { ArrowUpRight, Award, CalendarCheck, FlaskConical, FolderOpen, Search, Trophy, Zap } from "lucide-react";
+import { ArrowUpRight, Award, CalendarCheck, Dna, FlaskConical, FolderOpen, Search, Trophy, Zap } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -66,10 +66,11 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[
           { href: "/lab/physics", icon: Zap, title: t("nav_physics"), text: t("physics_card"), color: "text-accent", glow: "from-accent/20" },
           { href: "/lab/chemistry", icon: FlaskConical, title: t("nav_chemistry"), text: t("chemistry_card"), color: "text-chem", glow: "from-chem/20" },
+          { href: "/biology", icon: Dna, title: t("nav_biology"), text: L({ en: "Cells, heredity, DNA and evolution — interactive simulations.", ar: "الخلايا والوراثة والـDNA والتطور — محاكاة تفاعلية." }), color: "text-ok", glow: "from-ok/20" },
         ].map((c, i) => (
           <div key={c.href} className="animate-in" style={{ animationDelay: `${0.08 * (i + 1)}s` }}>
             <Link href={c.href} className="group relative block overflow-hidden rounded-2xl border border-line bg-surface p-6 transition-colors hover:border-line-strong">

@@ -467,6 +467,53 @@
    "author": "Amanda Roach",
    "license": "CC-BY-3.0",
    "intendedUse": "conical-flask glass"
+  },
+  {
+   "id": "pp-d-battery",
+   "name": "Large battery",
+   "path": "/models/polypizza/8Ggl5vpgUR_.glb",
+   "rotation": [
+    0,
+    0,
+    -90
+   ],
+   "fit": [
+    0.8,
+    null,
+    null
+   ],
+   "source": "https://poly.pizza/m/8Ggl5vpgUR_",
+   "author": "Poly by Google",
+   "license": "CC-BY-3.0",
+   "intendedUse": "battery-large"
+  },
+  {
+   "id": "pp-generator",
+   "name": "Portable generator",
+   "path": "/models/polypizza/K58RQ63qR5.glb",
+   "fit": [
+    0.7,
+    null,
+    null
+   ],
+   "source": "https://poly.pizza/m/K58RQ63qR5",
+   "author": "KolosStudios",
+   "license": "CC-BY-3.0",
+   "intendedUse": "generator"
+  },
+  {
+   "id": "pp-desk-fan",
+   "name": "Desk fan",
+   "path": "/models/polypizza/dPExITRhhZ.glb",
+   "fit": [
+    null,
+    0.55,
+    null
+   ],
+   "source": "https://poly.pizza/m/dPExITRhhZ",
+   "author": "J-Toastie",
+   "license": "CC-BY-3.0",
+   "intendedUse": "fan (blades spin with power)"
   }
  ]
 }

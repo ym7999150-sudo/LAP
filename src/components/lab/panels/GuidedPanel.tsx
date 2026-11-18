@@ -1,10 +1,12 @@
 "use client";
-import { CheckCircle2, Circle, Lightbulb, ShieldAlert, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Circle, Lightbulb, ShieldAlert, X } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "@/lib/client/api";
 import { useSession } from "@/lib/client/session";
 import { evaluateCriteria } from "@/lib/curriculum/criteria";
-import { getExperiment, UNITS } from "@/lib/curriculum/experiments";
+import { getExperiment, nextExperiment, UNITS } from "@/lib/curriculum/experiments";
+import { experimentHref } from "@/lib/curriculum/links";
 import { useI18n } from "@/lib/i18n/client";
 import { useEditor } from "../store";
 
@@ -20,7 +22,7 @@ interface Outcome {
 }
 
 export function GuidedPanel({ experimentId, onClose }: { experimentId: string; onClose?: () => void }) {
-  const { t, L } = useI18n();
+  const { t, L, dir } = useI18n();
   const { user, pushReward } = useSession();
   const exp = getExperiment(experimentId);
   const doc = useEditor((s) => s.doc);
@@ -28,9 +30,16 @@ export function GuidedPanel({ experimentId, onClose }: { experimentId: string; o
   const [result, setResult] = useState<Outcome | null>(null);
   const [busy, setBusy] = useState(false);
   const [showHints, setShowHints] = useState(false);
+  const [done, setDone] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!user) return;
+    api<{ completed: string[] }>("/api/progress").then((r) => setDone(new Set(r.completed))).catch(() => {});
+  }, [user, result]);
+  const ArrowIcon = dir === "rtl" ? ArrowLeft : ArrowRight;
   const live = useMemo(() => (exp && exp.criteria !== "quiz-only" ? evaluateCriteria(exp.criteria, doc) : { passed: true }), [exp, doc]);
   if (!exp) return null;
   const unit = UNITS.find((u) => u.id === exp.unit);
+  const next = nextExperiment(exp.id, done);
 
   const submit = async () => {
     if (!user) {
@@ -88,6 +97,12 @@ export function GuidedPanel({ experimentId, onClose }: { experimentId: string; o
             </ul>
           </section>
         )}
+        {done.has(exp.id) && next && !result && (
+          <Link href={experimentHref(next)} className="flex items-center justify-between rounded-lg border border-ok/40 bg-ok/5 p-2 text-xs text-ok">
+            <span>✓ {t("completed")} — {t("next_challenge")}: {L(next.title)}</span>
+            <ArrowIcon size={14} />
+          </Link>
+        )}
         <section className={`flex items-center gap-2 rounded-lg border p-2 ${live.passed ? "border-ok/40 bg-ok/5 text-ok" : "border-line text-muted"}`}>
           {live.passed ? <CheckCircle2 size={16} /> : <Circle size={16} />}
           <span className="text-xs">{L(exp.completion)}</span>
@@ -139,6 +154,11 @@ export function GuidedPanel({ experimentId, onClose }: { experimentId: string; o
               <>
                 <h3 className="mb-1 mt-2 text-xs font-semibold text-muted">{t("explanation")}</h3>
                 <p className="text-xs">{L(exp.explanation)}</p>
+                {next && (
+                  <Link href={experimentHref(next)} className="btn btn-primary mt-3 w-full animate-in">
+                    {t("next_challenge")}: {L(next.title)} <ArrowIcon size={15} />
+                  </Link>
+                )}
               </>
             )}
           </section>

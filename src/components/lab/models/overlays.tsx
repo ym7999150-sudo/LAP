@@ -106,3 +106,20 @@ export function StateBadge({ text, tone, y = 0.28 }: { text: string; tone: "on" 
 export function BurnerFlame({ lit }: { lit: boolean }) {
   return lit ? <Flame position={[0, 0.24, 0]} scale={0.9} /> : null;
 }
+
+/** Desk fan: the blade assembly spins at a speed set by the simulated power. */
+export function FanOverlay({ assetId, activity }: { assetId: string; activity: number }) {
+  const act = useRef(activity);
+  act.current = activity;
+  const drive = useCallback<Drive>((root, dt) => {
+    // The blade hub is the node named "Sphere" in this model; spin it with its children.
+    const hub = root.getObjectByName("Sphere");
+    if (hub && !prefersReducedMotion()) hub.rotation.z += dt * act.current * 40;
+  }, []);
+  return (
+    <>
+      <AssetModel assetId={assetId} fallback={null} drive={drive} />
+      <StateBadge text={activity > 0.05 ? `ON ${Math.round(activity * 100)}%` : "OFF"} tone={activity > 0.05 ? "on" : "off"} y={0.65} />
+    </>
+  );
+}

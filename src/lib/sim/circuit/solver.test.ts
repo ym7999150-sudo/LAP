@@ -353,3 +353,34 @@ describe("nonlinear and protective devices", () => {
     expect(run("glass")).toBe("off");
   });
 });
+
+describe("generator and fan", () => {
+  it("generator EMF scales with crank speed and drives a fan", () => {
+    const run = (rpm: number) => {
+      const c = new CircuitBuilder();
+      const g = c.add("generator", { rpm });
+      const f = c.add("fan", { resistance: 12, ratedPower: 3 });
+      c.wire(`${g}.pos`, `${f}.a`);
+      c.wire(`${f}.b`, `${g}.neg`);
+      const r = simulateCircuit(c.doc);
+      return { r, g, f };
+    };
+    const slow = run(150);
+    const fast = run(300);
+    // EMF = 0.02 V/rpm → 3 V and 6 V; I = EMF / (12 + 1 + wires)
+    close(fast.r.components[fast.f]!.current, 6 / (13 + 2 * WIRE_RESISTANCE), 1e-3);
+    close(fast.r.components[fast.f]!.current / slow.r.components[slow.f]!.current, 2, 1e-6);
+    expect(fast.r.closedCircuit).toBe(true);
+    expect(fast.r.components[fast.f]!.activity!).toBeGreaterThan(slow.r.components[slow.f]!.activity!);
+    expect(run(0).r.closedCircuit).toBe(false);
+  });
+
+  it("large battery behaves like a battery", () => {
+    const c = new CircuitBuilder();
+    const b = c.add("battery-large", { voltage: 6, internalResistance: 0.01 });
+    const r = c.add("resistor", { resistance: 60 });
+    c.wire(`${b}.pos`, `${r}.a`);
+    c.wire(`${r}.b`, `${b}.neg`);
+    close(simulateCircuit(c.doc).components[r]!.current, 0.1, 2e-3);
+  });
+});

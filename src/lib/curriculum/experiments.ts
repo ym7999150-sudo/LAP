@@ -7,6 +7,7 @@
  * Quiz answers live in ./answers.ts (server only).
  */
 import type { Lab } from "@/lib/registry";
+import { EXTRA_EXPERIMENTS } from "./experiments-extra";
 
 type L = { en: string; ar: string };
 const t = (en: string, ar: string): L => ({ en, ar });
@@ -68,7 +69,7 @@ export interface ExperimentDef {
 
 const P = (type: string, x: number, z: number, props?: TemplateObject["props"]): TemplateObject => ({ type, position: [x, 0, z], props });
 
-export const EXPERIMENTS: ExperimentDef[] = [
+const BASE_EXPERIMENTS: ExperimentDef[] = [
   {
     id: "closed-circuit",
     lab: "physics",
@@ -448,6 +449,25 @@ export const EXPERIMENTS: ExperimentDef[] = [
     achievement: "time_traveller",
   },
 ];
+
+const LAB_ORDER = ["physics", "chemistry", "biology", "earth"];
+
+/** All challenges, grouped by lab; within a lab the order defines the "next challenge". */
+export const EXPERIMENTS: ExperimentDef[] = [...BASE_EXPERIMENTS, ...EXTRA_EXPERIMENTS]
+  .map((e, i) => ({ e, i }))
+  .sort((a, b) => LAB_ORDER.indexOf(a.e.lab) - LAB_ORDER.indexOf(b.e.lab) || a.i - b.i)
+  .map((x) => x.e);
+
+/** The next challenge in the same lab (wraps to the next lab when a lab is finished). */
+export function nextExperiment(id: string, done: Set<string> = new Set()) {
+  const i = EXPERIMENTS.findIndex((e) => e.id === id);
+  if (i < 0) return undefined;
+  for (let k = 1; k < EXPERIMENTS.length; k++) {
+    const e = EXPERIMENTS[(i + k) % EXPERIMENTS.length]!;
+    if (!done.has(e.id)) return e;
+  }
+  return undefined;
+}
 
 export function getExperiment(id: string) {
   return EXPERIMENTS.find((e) => e.id === id);

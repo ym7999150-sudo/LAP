@@ -14,7 +14,7 @@ import { useEditor } from "./store";
 import { useSim } from "./useSimulation";
 import { pourPose } from "./PourFx";
 import { AssetModel } from "./AssetModel";
-import { AnalogMeterOverlay, BulbOverlay, BurnerFlame, CompassOverlay, DigitalMeterOverlay, StateBadge } from "./models/overlays";
+import { AnalogMeterOverlay, BulbOverlay, BurnerFlame, CompassOverlay, DigitalMeterOverlay, FanOverlay, StateBadge } from "./models/overlays";
 
 const floor = new Plane(new Vector3(0, 1, 0), 0);
 const hit = new Vector3();
@@ -80,9 +80,15 @@ function Terminals({ obj }: { obj: SObj }) {
               onPointerDown={(e: ThreeEvent<PointerEvent>) => {
                 if (readOnly) return;
                 e.stopPropagation();
-                if (tool !== "wire") setTool("wire");
                 const p = terminalWorld(obj, t.id)!;
-                startWire({ objectId: obj.id, terminalId: t.id }, [p.x, p.y, p.z]);
+                const here = { objectId: obj.id, terminalId: t.id };
+                // Select tool on a connected terminal = pull the wire end off (disconnect / re-route).
+                if (tool === "select" && connected.has(t.id) && useEditor.getState().detachWireAt(here, [p.x, p.y, p.z])) {
+                  sfx.unsnap();
+                  return;
+                }
+                if (tool !== "wire") setTool("wire");
+                startWire(here, [p.x, p.y, p.z]);
                 sfx.click();
               }}
               onPointerOver={(e) => {
@@ -125,12 +131,24 @@ function Model({ obj, quality }: { obj: SObj; quality: Quality }) {
     case "compass":
       return <CompassFromSim obj={obj} />;
     case "battery":
+    case "battery-large":
       return (
         <>
           <AssetModel assetId={def.assetId} fallback={procedural} />
-          <StateBadge text={`${obj.props.voltage ?? 9} V`} tone="off" y={0.32} />
+          <StateBadge text={`${obj.props.voltage ?? 9} V`} tone="off" y={obj.type === "battery-large" ? 0.4 : 0.32} />
         </>
       );
+    case "generator": {
+      const rpm = Number(obj.props.rpm ?? 300);
+      return (
+        <>
+          <AssetModel assetId={def.assetId} fallback={procedural} />
+          <StateBadge text={`${rpm} rpm · ${(0.02 * rpm).toFixed(1)} V`} tone={rpm > 0 ? "on" : "off"} y={0.55} />
+        </>
+      );
+    }
+    case "fan":
+      return <FanOverlay assetId={def.assetId} activity={sim?.activity ?? 0} />;
     case "switch":
     case "push-button": {
       const closed = obj.props.closed === true;

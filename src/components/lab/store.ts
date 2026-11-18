@@ -55,6 +55,9 @@ interface EditorState {
   deleteSelected: () => void;
   duplicateSelected: () => void;
   startWire: (from: Endpoint, point: [number, number, number]) => void;
+  /** Lift one end of an existing wire off a terminal: the wire is removed and a drag starts from its other end. */
+  detachWireAt: (at: Endpoint, point: [number, number, number]) => boolean;
+  disconnectSelected: () => number;
   moveDraft: (point: [number, number, number]) => void;
   setHoverTerminal: (e: Endpoint | null) => void;
   finishWire: (to: Endpoint | null) => "connected" | "cancelled" | "invalid";
@@ -207,6 +210,22 @@ export const useEditor = create<EditorState>((set, get) => {
     },
 
     startWire: (from, point) => set({ draft: { from, point }, selection: [], selectedWire: null }),
+    disconnectSelected: () => {
+      const { selection, doc } = get();
+      const n = doc.wires.filter((w) => selection.includes(w.from.objectId) || selection.includes(w.to.objectId)).length;
+      if (n) mutate((d) => void (d.wires = d.wires.filter((w) => !selection.includes(w.from.objectId) && !selection.includes(w.to.objectId))));
+      return n;
+    },
+    detachWireAt: (at, point) => {
+      const s = get();
+      if (s.readOnly) return false;
+      const w = [...s.doc.wires].reverse().find((x) => (x.from.objectId === at.objectId && x.from.terminalId === at.terminalId) || (x.to.objectId === at.objectId && x.to.terminalId === at.terminalId));
+      if (!w) return false;
+      const other = w.from.objectId === at.objectId && w.from.terminalId === at.terminalId ? w.to : w.from;
+      mutate((d) => void (d.wires = d.wires.filter((x) => x.id !== w.id)));
+      set({ draft: { from: other, point }, wireColor: w.color, selection: [], selectedWire: null });
+      return true;
+    },
     moveDraft: (point) => set((s) => (s.draft ? { draft: { ...s.draft, point } } : {})),
     setHoverTerminal: (hoverTerminal) => set({ hoverTerminal }),
     finishWire: (to) => {

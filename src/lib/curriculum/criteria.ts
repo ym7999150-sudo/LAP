@@ -4,6 +4,7 @@
  */
 import { replayChemistry, type ChemResult } from "@/lib/chem/engine";
 import { findReactionById } from "@/lib/chem/reactions";
+import { getSubstance } from "@/lib/chem/substances";
 import type { SceneDocument } from "@/lib/scene/schema";
 import { simulateCircuit, type SimulationResult } from "@/lib/sim/circuit/solver";
 
@@ -106,6 +107,59 @@ const CHECKS: Record<string, (c: Ctx) => Evaluation> = {
   "precipitate-any": ({ chem }) => {
     const k = chem();
     return { passed: k.reactionsObserved.some((id) => findReactionById(id)?.observations.precipitate), reason: "Form a precipitate." };
+  },
+  divider: ({ doc, circuit }) => {
+    const r = circuit();
+    const res = ofType(doc, "resistor").filter((x) => Math.abs(r.components[x.id]?.current ?? 0) > 1e-4);
+    if (res.length < 2 || !r.closedCircuit) return { passed: false, reason: "Two resistors must carry current in series." };
+    const i0 = Math.abs(r.components[res[0]!.id]!.current);
+    const series = res.slice(1).some((x) => Math.abs(Math.abs(r.components[x.id]!.current) - i0) / i0 < 0.01);
+    const vm = ofType(doc, "voltmeter").some((m) => {
+      const v = Math.abs(r.components[m.id]?.reading ?? 0);
+      return v > 0.05 && res.some((x) => Math.abs(Math.abs(r.components[x.id]!.voltage) - v) / v < 0.02);
+    });
+    return { passed: series && vm, reason: "Measure the voltage across one of two series resistors." };
+  },
+  dimmer: ({ doc, circuit }) => {
+    const r = circuit();
+    const lit = ofType(doc, "bulb").find((b) => (r.components[b.id]?.activity ?? 0) > 0.02);
+    const varR = [...ofType(doc, "rheostat"), ...ofType(doc, "potentiometer")].find((x) => Math.abs(r.components[x.id]?.current ?? 0) > 1e-4);
+    return { passed: !!lit && !!varR && r.closedCircuit, reason: "Put a variable resistor in series with a glowing bulb." };
+  },
+  "fuse-blown": ({ doc, circuit }) => {
+    const r = circuit();
+    const blown = ofType(doc, "fuse").some((f) => f.props.blown === true || r.components[f.id]?.state === "blown");
+    return { passed: blown, reason: "Increase the current until a fuse blows." };
+  },
+  "generator-load": ({ doc, circuit }) => {
+    const r = circuit();
+    const gen = ofType(doc, "generator").some((g) => Math.abs(r.components[g.id]?.current ?? 0) > 1e-3);
+    const load = doc.objects.some((o) => ["bulb", "fan", "motor", "led"].includes(o.type) && (r.components[o.id]?.activity ?? 0) > 0.1);
+    return { passed: gen && load, reason: "Power a bulb, fan or motor from the generator." };
+  },
+  "fan-on": ({ doc, circuit }) => {
+    const r = circuit();
+    const fan = ofType(doc, "fan").some((f) => (r.components[f.id]?.activity ?? 0) > 0.2);
+    const sw = ofType(doc, "switch").some((s) => s.props.closed === true && Math.abs(r.components[s.id]?.current ?? 0) > 1e-3);
+    return { passed: fan && sw, reason: "Run the fan through a closed switch." };
+  },
+  "motor-variable": ({ doc, circuit }) => {
+    const r = circuit();
+    const m = ofType(doc, "motor").some((x) => (r.components[x.id]?.activity ?? 0) > 0.05);
+    const v = [...ofType(doc, "rheostat"), ...ofType(doc, "potentiometer")].some((x) => Math.abs(r.components[x.id]?.current ?? 0) > 1e-4);
+    const a = ofType(doc, "ammeter").some((x) => Math.abs(r.components[x.id]?.reading ?? 0) > 1e-4);
+    return { passed: m && v && a, reason: "Motor running with a variable resistor and an ammeter in series." };
+  },
+  "ldr-led": ({ doc, circuit }) => {
+    const r = circuit();
+    const ldr = ofType(doc, "photoresistor").some((x) => Math.abs(r.components[x.id]?.current ?? 0) > 1e-4);
+    const led = ofType(doc, "led").some((x) => r.components[x.id]?.state === "on");
+    return { passed: ldr && led, reason: "Light an LED through a photoresistor." };
+  },
+  "indicator-both": ({ chem }) => {
+    const k = chem();
+    const views = Object.values(k.containers).filter((c) => c.dissolved.some((d) => getSubstance(d.id)?.cls === "indicator") && c.pH !== null);
+    return { passed: views.some((c) => c.pH! < 6) && views.some((c) => c.pH! > 8), reason: "Show the indicator in an acid and in a base." };
   },
   "quiz-only": () => ({ passed: true }),
 };

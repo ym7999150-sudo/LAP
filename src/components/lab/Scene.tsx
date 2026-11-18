@@ -75,6 +75,7 @@ function WireDragController() {
       s.setHoverTerminal(null);
       if (r === "connected") sfx.snap();
       else if (r === "invalid") sfx.error();
+      else sfx.unsnap();
     };
     const cancel = (e: KeyboardEvent) => {
       if (e.key === "Escape" && useEditor.getState().draft) useEditor.setState({ draft: null, hoverTerminal: null });

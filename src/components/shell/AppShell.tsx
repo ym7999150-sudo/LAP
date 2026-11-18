@@ -10,11 +10,12 @@ import { BRAND } from "@/lib/brand";
 import { Logo } from "./Logo";
 import { MOBILE_TABS, NAV_GROUPS } from "./nav";
 import { RewardToasts } from "./RewardToasts";
+import { ThankYouGate } from "./ThankYou";
 import { LevelBadge } from "./LevelBadge";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
-  const { t } = useI18n();
+  const { t, L } = useI18n();
   const { user } = useSession();
   const [moreOpen, setMoreOpen] = useState(false);
   const bare = path === "/";
@@ -43,16 +44,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <nav className="scroll-thin flex-1 overflow-y-auto px-3 pb-4" aria-label="Main">
             {NAV_GROUPS.map((g, i) => (
               <div key={i} className="mb-3 border-b border-line/60 pb-3 last:border-0">
-                {g.items.filter((it) => visible(it.admin)).map((it) => (
-                  <Link
-                    key={it.href}
-                    href={it.href}
-                    className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${isActive(it.href) ? "bg-accent/10 text-accent" : "text-muted hover:bg-surface-2 hover:text-ink"}`}
-                  >
-                    <it.icon size={17} strokeWidth={1.8} />
-                    {t(it.label)}
-                  </Link>
-                ))}
+                <div className="px-3 pb-1.5 pt-1 text-[10.5px] font-semibold uppercase tracking-wider text-faint">{L(g.title)}</div>
+                {g.items.filter((it) => visible(it.admin)).map((it) => {
+                  const active = isActive(it.href);
+                  return (
+                    <Link key={it.href} href={it.href} className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${active ? "text-accent" : "text-muted hover:text-ink"}`}>
+                      {active && <motion.span layoutId="nav-active" className="absolute inset-0 rounded-lg border border-accent/25 bg-accent/10" transition={{ type: "spring", stiffness: 420, damping: 34 }} />}
+                      <span className="absolute inset-0 rounded-lg bg-surface-2 opacity-0 transition-opacity group-hover:opacity-100" style={{ display: active ? "none" : undefined }} />
+                      <it.icon size={17} strokeWidth={1.8} className="relative transition-transform group-hover:scale-110" />
+                      <span className="relative">{t(it.label)}</span>
+                    </Link>
+                  );
+                })}
               </div>
             ))}
           </nav>
@@ -123,6 +126,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
       <RewardToasts />
+      <ThankYouGate />
     </div>
   );
 }

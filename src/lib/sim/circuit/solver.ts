@@ -178,6 +178,13 @@ function build(doc: SceneDocument, opts: BuildOptions): Built {
         R(x, T("pos"), num(o, "internalResistance", 0.5), o.id, "internal");
         break;
       }
+      case "generator": {
+        // Linear dynamo: EMF proportional to crank speed, 1 Ω internal resistance.
+        const x = node(`${o.id}:__int`);
+        elems.push({ kind: "V", p: x, n: T("neg"), v: opts.zeroSources ? 0 : 0.02 * num(o, "rpm", 300), owner: o.id, role: "emf" });
+        R(x, T("pos"), 1, o.id, "internal");
+        break;
+      }
       case "resistor":
         R(T("a"), T("b"), num(o, "resistance", 100), o.id);
         break;
@@ -482,8 +489,9 @@ export function simulateCircuit(doc: SceneDocument): SimulationResult {
     };
 
     switch (model) {
+      case "generator":
       case "battery": {
-        const emf = num(o, "voltage", 9);
+        const emf = model === "generator" ? 0.02 * num(o, "rpm", 300) : num(o, "voltage", 9);
         const internal = elemsOf(o.id).find((e) => e.kind === "R" && e.role === "internal") as Extract<Elem, { kind: "R" }>;
         const iDelivered = (solved.v[internal.a]! - solved.v[internal.b]!) / internal.r;
         res.voltage = term("pos") - term("neg");
@@ -609,7 +617,7 @@ export function simulateCircuit(doc: SceneDocument): SimulationResult {
     result.components[o.id] = res;
   }
 
-  const hasPoweredSource = objects.some((o) => effectiveModel(o) === "battery" && num(o, "voltage", 9) > 0);
+  const hasPoweredSource = objects.some((o) => (effectiveModel(o) === "battery" && num(o, "voltage", 9) > 0) || (effectiveModel(o) === "generator" && num(o, "rpm", 300) > 0));
   const hasLoads = doc.wires.length > 0;
   if (!hasPoweredSource && hasLoads) issues.push({ code: "no-source", severity: "info", componentIds: [] });
   if (anySource && !shorted && sourceCurrent <= CONDUCTING_THRESHOLD)

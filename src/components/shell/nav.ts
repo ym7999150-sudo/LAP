@@ -4,6 +4,7 @@ import {
   Award,
   BookOpen,
   Cpu,
+  Dna,
   FlaskConical,
   FolderOpen,
   Gauge,
@@ -30,17 +31,20 @@ export interface NavItem {
   admin?: boolean;
 }
 
-export const NAV_GROUPS: { items: NavItem[] }[] = [
+export const NAV_GROUPS: { title: { en: string; ar: string }; items: NavItem[] }[] = [
   {
+    title: { en: "Labs", ar: "المعامل" },
     items: [
       { href: "/dashboard", label: "nav_dashboard", icon: LayoutDashboard },
       { href: "/lab/physics", label: "nav_physics", icon: Zap },
       { href: "/lab/chemistry", label: "nav_chemistry", icon: FlaskConical },
+      { href: "/biology", label: "nav_biology", icon: Dna },
       { href: "/lab/free", label: "nav_free", icon: Sparkles },
       { href: "/experiments", label: "nav_experiments", icon: GraduationCap },
     ],
   },
   {
+    title: { en: "Library", ar: "المكتبة العلمية" },
     items: [
       { href: "/library/equipment", label: "nav_equipment", icon: Microscope },
       { href: "/library/components", label: "nav_components", icon: Cpu },
@@ -49,6 +53,7 @@ export const NAV_GROUPS: { items: NavItem[] }[] = [
     ],
   },
   {
+    title: { en: "Progress", ar: "التقدم والمجتمع" },
     items: [
       { href: "/projects", label: "nav_projects", icon: FolderOpen },
       { href: "/shared", label: "nav_shared", icon: Share2 },
@@ -58,6 +63,7 @@ export const NAV_GROUPS: { items: NavItem[] }[] = [
     ],
   },
   {
+    title: { en: "Account", ar: "الحساب" },
     items: [
       { href: "/profile", label: "nav_profile", icon: User },
       { href: "/settings", label: "nav_settings", icon: Settings },

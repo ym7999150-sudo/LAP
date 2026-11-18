@@ -1,5 +1,5 @@
 "use client";
-import { Copy, Flame, RotateCw, Trash2, Droplets, Eraser } from "lucide-react";
+import { Copy, Flame, RotateCw, Trash2, Droplets, Eraser, Unplug } from "lucide-react";
 import { useState } from "react";
 import { isContainerType } from "@/lib/chem/engine";
 import { reactionEquation } from "@/lib/chem/format";
@@ -310,6 +310,14 @@ export function Inspector() {
             </span>
             <input type="range" className="w-full accent-[var(--color-accent)]" min={0.5} max={2} step={0.05} value={obj.scale[0]} onChange={(e) => setScale(obj.id, Number(e.target.value))} />
           </label>
+          {def.terminals.length > 0 && (
+            <div>
+              <button className="btn w-full" onClick={() => { if (useEditor.getState().disconnectSelected()) sfx.unsnap(); }}>
+                <Unplug size={15} /> {t("disconnect_all")}
+              </button>
+              <p className="mt-1.5 text-[11px] text-faint">{t("disconnect_hint")}</p>
+            </div>
+          )}
           <div className="grid grid-cols-3 gap-2">
             <button className="btn" onClick={rotateSelected} title={t("rotate")}>
               <RotateCw size={15} />

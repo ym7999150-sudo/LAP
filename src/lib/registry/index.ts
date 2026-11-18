@@ -10,6 +10,9 @@ export * from "./types";
  */
 export const ASSET_MAP: Record<string, string> = {
   battery: "pp-aa-battery",
+  "battery-large": "pp-d-battery",
+  generator: "pp-generator",
+  fan: "pp-desk-fan",
   bulb: "ph-lightbulb",
   switch: "pp-lever-switch",
   "push-button": "pp-push-button",
