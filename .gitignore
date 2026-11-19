@@ -11,3 +11,6 @@ coverage
 .next-build
 .build.log
 .data
+dist-desktop
+desktop-build.log
+desktop-pack.log

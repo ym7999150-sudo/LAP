@@ -79,7 +79,8 @@ export function isAdmin(user: { id: string; role: string }) {
 export async function setSessionCookie(token: string) {
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    // The desktop app serves over http://localhost, so it opts out of the Secure flag explicitly.
+    secure: process.env.NODE_ENV === "production" && !process.env.LABVERSE_DESKTOP,
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 365,

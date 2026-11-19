@@ -14,7 +14,10 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",
-    "check": "npm run typecheck && npm run lint && npm run test"
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "build:desktop:next": "node -e \"process.env.BUILD_TARGET='desktop';require('child_process').execSync('npx next build',{stdio:'inherit',env:process.env})\"",
+    "build:desktop:prepare": "node scripts/prepare-desktop.cjs",
+    "build:desktop": "npm run build:desktop:next && npm run build:desktop:prepare && electron-builder --win portable"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.16",
@@ -40,11 +43,56 @@
     "@types/three": "^0.180.0",
     "dotenv": "^17.2.2",
     "drizzle-kit": "^0.31.4",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.36.0",
     "eslint-config-next": "^15.5.4",
     "tailwindcss": "^4.1.13",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
+  },
+  "main": "electron/main.cjs",
+  "description": "LabVerse 3D — interactive 3D science laboratory",
+  "author": "LabVerse",
+  "build": {
+    "appId": "app.labverse3d.desktop",
+    "productName": "LabVerse 3D",
+    "directories": {
+      "output": "dist-desktop"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json",
+      "!node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": ".next/standalone",
+        "to": "server",
+        "filter": [
+          "**/*",
+          "!.env",
+          "!.env.*"
+        ]
+      }
+    ],
+    "asar": true,
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "LabVerse-3D-${version}-portable.exe"
+    },
+    "portable": {
+      "artifactName": "LabVerse-3D-${version}-portable.exe"
+    },
+    "includeSubNodeModules": false
   }
 }
