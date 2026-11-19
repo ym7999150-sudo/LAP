@@ -14,3 +14,4 @@ coverage
 dist-desktop
 desktop-build.log
 desktop-pack.log
+.desktop-build.log
